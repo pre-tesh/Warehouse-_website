@@ -1,0 +1,163 @@
+.dashboard {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 24px 32px 40px;
+  max-width: 1680px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.dashboard__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 0 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.dashboard__title-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.dashboard__logo {
+  font-size: 2.2rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 8px rgba(45,106,79,0.25));
+}
+
+.dashboard__title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(120deg, #1b4332, #2d6a4f);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dashboard__subtitle {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.dashboard__header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.dashboard__conn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid;
+}
+.dashboard__conn.connected    { color: var(--sage);      border-color: rgba(45, 106, 79, 0.3); background: var(--sage-light); }
+.dashboard__conn.disconnected { color: var(--text-muted); border-color: var(--border); background: var(--bg-elevated); }
+
+.dashboard__conn-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sage);
+}
+.dashboard__conn.disconnected .dashboard__conn-dot {
+  background: var(--text-muted);
+}
+
+.dashboard__timestamp {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+/* ── Main layout ─────────────────────────────────────────────────────────── */
+.dashboard__main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 24px;
+  align-items: start;
+  margin-bottom: 28px;
+  width: 100%;
+}
+
+@media (max-width: 1200px) {
+  .dashboard__main {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── 3D Scene ─────────────────────────────────────────────────────────────── */
+.dashboard__scene {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: var(--shadow-md);
+  min-width: 0;
+  width: 100%;
+}
+
+.dashboard__scene-inner {
+  height: 540px;
+  width: 100%;
+  position: relative;
+}
+
+.dashboard__scene-label {
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+/* ── Right panel ─────────────────────────────────────────────────────────── */
+.dashboard__right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.dashboard__sensor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  width: 100%;
+}
+
+/* ── Bottom section ──────────────────────────────────────────────────────── */
+.dashboard__bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 4px;
+  width: 100%;
+}
+
+.dashboard__tab-content {
+  min-height: 200px;
+  width: 100%;
+}

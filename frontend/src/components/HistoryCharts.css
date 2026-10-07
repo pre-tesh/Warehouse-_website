@@ -1,0 +1,44 @@
+.history-charts__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .history-charts__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.history-chart {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.history-chart__title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.history-chart__range-badge {
+  margin-left: auto;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0;
+  text-transform: none;
+  background: var(--bg-elevated);
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+}

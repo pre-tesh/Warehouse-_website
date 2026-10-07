@@ -1,0 +1,163 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   index.css — Global Design System (Light Theme)
+   Mini Greenhouse Digital Twin
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Google Fonts ─────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* ── Design Tokens (Light Theme) ─────────────────────────────────────────── */
+:root {
+  /* Core backgrounds */
+  --bg:          #f3f7f4;
+  --bg-card:     #ffffff;
+  --bg-elevated: #f9fbf9;
+  --border:      #dbe5dc;
+  --border-subtle: #edf3ee;
+
+  /* Accent palette */
+  --sage:        #2d6a4f;
+  --sage-dim:    #52b788;
+  --sage-light:  #eaf4ed;
+  --amber:       #d97706;
+  --amber-dim:   #b45309;
+  --amber-light: #fffbeb;
+  --red-alert:   #dc2626;
+  --red-light:   #fef2f2;
+  --blue-cool:   #0284c7;
+  --blue-light:  #f0f9ff;
+
+  /* Text */
+  --text-primary: #152419;
+  --text-muted:   #496150;
+  --text-faint:   #7d9885;
+
+  /* Shadows */
+  --shadow-sm:  0 2px 8px rgba(15, 35, 20, 0.05);
+  --shadow-md:  0 8px 24px -4px rgba(15, 35, 20, 0.08), 0 2px 6px -1px rgba(15, 35, 20, 0.04);
+  --shadow-lg:  0 16px 40px -8px rgba(15, 35, 20, 0.12);
+
+  /* Glow effects */
+  --glow-sage:  0 4px 20px rgba(45, 106, 79, 0.12);
+  --glow-amber: 0 4px 20px rgba(217, 119, 6, 0.15);
+}
+
+/* ── Reset ────────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  background-image:
+    radial-gradient(ellipse 70% 50% at 10% 0%, rgba(82, 183, 136, 0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 50% at 90% 100%, rgba(217, 119, 6, 0.05) 0%, transparent 70%);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ── Typography ───────────────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5 {
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
+/* ── Utility classes ──────────────────────────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid;
+}
+
+.badge--sage  { color: var(--sage);       border-color: rgba(45, 106, 79, 0.3); background: var(--sage-light); }
+.badge--amber { color: var(--amber-dim);  border-color: rgba(217, 119, 6, 0.3); background: var(--amber-light); }
+.badge--red   { color: var(--red-alert);  border-color: rgba(220, 38, 38, 0.3); background: var(--red-light); }
+.badge--muted { color: var(--text-muted); border-color: var(--border);         background: var(--bg-elevated); }
+
+/* ── Connection dot animation ─────────────────────────────────────────────── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
+.pulse { animation: pulse-dot 1.8s ease-in-out infinite; }
+
+/* ── Fade-in for new content ──────────────────────────────────────────────── */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fade-in 0.35s ease; }
+
+/* ── Tab panel ────────────────────────────────────────────────────────────── */
+.tab-bar {
+  display: flex;
+  gap: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 4px;
+  width: fit-content;
+  box-shadow: var(--shadow-sm);
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 8px 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 9px;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+  transition: all 0.2s ease;
+}
+.tab-btn:hover:not(.active) { color: var(--text-primary); background: var(--bg-elevated); }
+.tab-btn.active {
+  background: var(--sage);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(45, 106, 79, 0.25);
+}
+
+/* ── Number input remove arrows ───────────────────────────────────────────── */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+input[type=number] { -moz-appearance: textfield; }

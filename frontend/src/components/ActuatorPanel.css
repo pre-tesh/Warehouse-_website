@@ -1,0 +1,200 @@
+.actuator-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.actuator-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.actuator-panel__title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.actuator-panel__status {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid;
+  transition: all 0.4s ease;
+}
+.actuator-panel__status.on  { color: var(--amber-dim); border-color: rgba(217, 119, 6, 0.4); background: var(--amber-light); }
+.actuator-panel__status.off { color: var(--text-muted); border-color: var(--border); background: var(--bg-elevated); }
+
+/* Mode toggle */
+.actuator-panel__mode-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.actuator-panel__mode-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.actuator-panel__mode-toggle {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 2px;
+}
+
+.mode-btn {
+  background: none;
+  border: none;
+  padding: 5px 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.02em;
+  border-radius: 7px;
+}
+.mode-btn.active {
+  background: var(--sage);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(45, 106, 79, 0.2);
+}
+.mode-btn:hover:not(.active) {
+  color: var(--text-primary);
+}
+
+/* Manual controls */
+.actuator-panel__manual {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: opacity 0.3s ease;
+}
+.actuator-panel__manual.disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.actuator-panel__toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.actuator-panel__toggle-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Toggle switch */
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
+}
+.toggle-switch input { display: none; }
+.toggle-thumb {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+.toggle-thumb::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 16px;
+  height: 16px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  transition: transform 0.3s ease, background 0.3s ease;
+}
+.toggle-switch input:checked + .toggle-thumb {
+  background: var(--amber-light);
+  border-color: var(--amber);
+}
+.toggle-switch input:checked + .toggle-thumb::after {
+  transform: translateX(20px);
+  background: var(--amber);
+}
+
+/* Slider */
+.actuator-panel__slider-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.actuator-panel__slider-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.actuator-panel__slider-value {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--amber-dim);
+}
+
+.actuator-panel__slider {
+  width: 100%;
+  -webkit-appearance: none;
+  height: 6px;
+  border-radius: 4px;
+  background: var(--border);
+  outline: none;
+  cursor: pointer;
+}
+.actuator-panel__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--amber);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(217,119,6,0.4);
+}
+
+/* Auto mode info */
+.actuator-panel__auto-info {
+  display: flex;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: var(--sage-light);
+  border: 1px solid rgba(45, 106, 79, 0.2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  line-height: 1.4;
+}
+
+/* Brightness bar */
+.actuator-panel__brightness-bar-wrap {
+  height: 4px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.actuator-panel__brightness-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #d97706, #fbbf24);
+  border-radius: 3px;
+  transition: width 0.6s ease, opacity 0.4s ease;
+}

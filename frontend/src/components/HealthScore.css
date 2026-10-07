@@ -1,0 +1,59 @@
+.health-score {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.health-score__arc-wrap {
+  width: 125px;
+  height: 125px;
+}
+
+.health-score__svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.health-score__label {
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition: color 0.5s ease;
+}
+
+.health-score__advice {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.health-score__advice-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  line-height: 1.4;
+  background: var(--bg-elevated);
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.health-score__advice-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+  transition: background 0.5s ease;
+}

@@ -1,0 +1,104 @@
+.sensor-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  min-width: 0;
+}
+
+.sensor-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.sensor-card--ok::before    { background: radial-gradient(ellipse at top left, rgba(45, 106, 79, 0.06), transparent 70%); opacity: 1; }
+.sensor-card--low::before   { background: radial-gradient(ellipse at top left, rgba(217, 119, 6, 0.08), transparent 70%); opacity: 1; }
+.sensor-card--high::before  { background: radial-gradient(ellipse at top left, rgba(220, 38, 38, 0.08), transparent 70%); opacity: 1; }
+
+.sensor-card--ok    { border-color: rgba(45, 106, 79, 0.25); }
+.sensor-card--low   { border-color: rgba(217, 119, 6, 0.35); }
+.sensor-card--high  { border-color: rgba(220, 38, 38, 0.35); }
+
+.sensor-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.sensor-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sensor-card__icon {
+  font-size: 1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.sensor-card__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.sensor-card__badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 1px solid;
+  border-radius: 20px;
+  padding: 2px 7px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: color 0.3s, border-color 0.3s, background 0.3s;
+}
+
+.sensor-card__value {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-top: 2px;
+}
+
+.sensor-card__unit {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+.sensor-card__range {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.sensor-card__spark {
+  margin-top: 2px;
+  height: 38px;
+}
