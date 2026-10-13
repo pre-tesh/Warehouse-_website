@@ -10,6 +10,97 @@
   box-shadow: var(--shadow-sm);
 }
 
+.health-score--compact {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(13, 28, 24, 0.78);
+  border: 1px solid rgba(168, 197, 188, 0.2);
+  border-radius: 999px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
+  color: #eaf5ef;
+  max-width: 260px;
+}
+
+.health-score__status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.health-score__status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--status-color, #6bcf8a);
+  box-shadow: 0 0 14px var(--status-color, #6bcf8a);
+}
+
+.health-score__status-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f0f7f3;
+}
+
+.health-score__score-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.health-score__hover-panel {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 10px);
+  width: 260px;
+  background: rgba(10, 19, 17, 0.94);
+  border: 1px solid rgba(164, 191, 182, 0.15);
+  border-radius: 14px;
+  padding: 14px 12px;
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.24);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.health-score--compact:hover .health-score__hover-panel,
+.health-score--compact:focus-within .health-score__hover-panel {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.health-score__hover-title {
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #b7d3c9;
+  margin-bottom: 4px;
+}
+
+.health-score__hover-score {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--status-color, #6bcf8a);
+  margin-bottom: 8px;
+}
+
 .health-score__arc-wrap {
   width: 125px;
   height: 125px;

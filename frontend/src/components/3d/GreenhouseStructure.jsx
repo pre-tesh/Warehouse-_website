@@ -34,41 +34,12 @@ function GlassPane({ position, rotation, width, height, humidityNorm }) {
   );
 }
 
-// Helper: draw a grid of thin bars (the window pane dividers)
-function GridBars({ position, rotation, width, height, cols = 3, rows = 2 }) {
-  const bars = [];
-  const barColor = '#2d5a35';
-  const barThickness = 0.04;
-
-  // Horizontal bars
-  for (let r = 0; r <= rows; r++) {
-    const y = -height / 2 + (r / rows) * height;
-    bars.push(
-      <mesh key={`h${r}`} position={[position[0], position[1] + y, position[2]]} rotation={rotation}>
-        <boxGeometry args={[width, barThickness, barThickness]} />
-        <meshStandardMaterial color={barColor} roughness={0.4} metalness={0.5} />
-      </mesh>
-    );
-  }
-  // Vertical bars
-  for (let c = 0; c <= cols; c++) {
-    const x = -width / 2 + (c / cols) * width;
-    bars.push(
-      <mesh key={`v${c}`} position={[position[0] + x, position[1], position[2]]} rotation={rotation}>
-        <boxGeometry args={[barThickness, height, barThickness]} />
-        <meshStandardMaterial color={barColor} roughness={0.4} metalness={0.5} />
-      </mesh>
-    );
-  }
-  return <group>{bars}</group>;
-}
-
 export function GreenhouseStructure({ humidityNorm = 0 }) {
-  const W = 4;   // greenhouse width (X)
-  const D = 6;   // greenhouse depth (Z)
-  const H = 3;   // wall height
-  const roofH = 1.8; // peak height above walls
-  const frameColor = '#24482b'; // elegant botanical dark emerald frame
+  const W = 4.4;      // greenhouse width (X)
+  const D = 6.2;      // greenhouse depth (Z)
+  const H = 3.1;      // wall height
+  const roofH = 1.7;  // peak height above walls
+  const frameColor = '#1d3827';
 
   return (
     <group position={[0, 0, 0]}>
@@ -78,41 +49,31 @@ export function GreenhouseStructure({ humidityNorm = 0 }) {
         <meshStandardMaterial color="#8c7355" roughness={0.9} />
       </mesh>
 
-      {/* ── Front wall (glass + grid) ─────────────────────────────────────── */}
-      <GlassPane position={[0, H/2 - 1.5, D/2]} rotation={[0, 0, 0]} width={W} height={H} humidityNorm={humidityNorm} />
-      <GridBars  position={[0, H/2 - 1.5, D/2 + 0.01]} rotation={[0, 0, 0]} width={W} height={H} cols={4} rows={3} />
-
-      {/* ── Back wall ─────────────────────────────────────────────────────── */}
-      <GlassPane position={[0, H/2 - 1.5, -D/2]} rotation={[0, Math.PI, 0]} width={W} height={H} humidityNorm={humidityNorm} />
-      <GridBars  position={[0, H/2 - 1.5, -D/2 - 0.01]} rotation={[0, Math.PI, 0]} width={W} height={H} cols={4} rows={3} />
-
-      {/* ── Left wall ─────────────────────────────────────────────────────── */}
+      {/* ── Simple glass walls — no heavy grid divisions ───────────────── */}
+      <GlassPane position={[0, H/2 - 1.5, D/2]} rotation={[0, 0, 0]} width={W - 0.1} height={H} humidityNorm={humidityNorm} />
+      <GlassPane position={[0, H/2 - 1.5, -D/2]} rotation={[0, Math.PI, 0]} width={W - 0.1} height={H} humidityNorm={humidityNorm} />
       <GlassPane position={[-W/2, H/2 - 1.5, 0]} rotation={[0, Math.PI/2, 0]} width={D} height={H} humidityNorm={humidityNorm} />
-      <GridBars  position={[-W/2 - 0.01, H/2 - 1.5, 0]} rotation={[0, Math.PI/2, 0]} width={D} height={H} cols={5} rows={3} />
-
-      {/* ── Right wall ────────────────────────────────────────────────────── */}
       <GlassPane position={[W/2, H/2 - 1.5, 0]} rotation={[0, -Math.PI/2, 0]} width={D} height={H} humidityNorm={humidityNorm} />
-      <GridBars  position={[W/2 + 0.01, H/2 - 1.5, 0]} rotation={[0, -Math.PI/2, 0]} width={D} height={H} cols={5} rows={3} />
 
-      {/* ── Peaked roof panels (two angled glass planes) ─────────────────── */}
+      {/* ── Roof panels ───────────────────────────────────────────────────── */}
       <RoofPanel humidityNorm={humidityNorm} W={W} D={D} roofH={roofH} H={H} side="left" />
       <RoofPanel humidityNorm={humidityNorm} W={W} D={D} roofH={roofH} H={H} side="right" />
 
-      {/* ── Door frame (front center) ─────────────────────────────────────── */}
+      {/* ── Minimal front door frame ─────────────────────────────────────── */}
       <DoorFrame position={[0, -0.2, D/2 + 0.05]} />
 
-      {/* ── Structural corner posts ───────────────────────────────────────── */}
+      {/* ── Four simple structural posts at the corners ─────────────────── */}
       {[[-W/2, -D/2], [-W/2, D/2], [W/2, -D/2], [W/2, D/2]].map(([x, z], i) => (
         <mesh key={i} position={[x, H/2 - 1.5, z]} castShadow>
-          <boxGeometry args={[0.09, H, 0.09]} />
-          <meshStandardMaterial color={frameColor} roughness={0.4} metalness={0.5} />
+          <boxGeometry args={[0.08, H, 0.08]} />
+          <meshStandardMaterial color={frameColor} roughness={0.5} metalness={0.6} />
         </mesh>
       ))}
 
-      {/* ── Ridge beam along the roof peak ───────────────────────────────── */}
-      <mesh position={[0, H - 1.5 + roofH - 0.05, 0]} castShadow>
-        <boxGeometry args={[0.12, 0.12, D]} />
-        <meshStandardMaterial color={frameColor} roughness={0.4} metalness={0.5} />
+      {/* ── Roof ridge beam ───────────────────────────────────────────────── */}
+      <mesh position={[0, H - 1.5 + roofH - 0.06, 0]} castShadow>
+        <boxGeometry args={[0.12, 0.12, D - 0.4]} />
+        <meshStandardMaterial color={frameColor} roughness={0.5} metalness={0.6} />
       </mesh>
     </group>
   );

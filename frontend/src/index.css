@@ -1,90 +1,79 @@
 /* ════════════════════════════════════════════════════════════════════════════
-   index.css — Global Design System (Light Theme)
-   Mini Greenhouse Digital Twin
+   New Minimal Professional Greenhouse Dashboard Theme
    ════════════════════════════════════════════════════════════════════════════ */
 
-/* ── Google Fonts ─────────────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 
-/* ── Design Tokens (Light Theme) ─────────────────────────────────────────── */
 :root {
-  /* Core backgrounds */
-  --bg:          #f3f7f4;
-  --bg-card:     #ffffff;
-  --bg-elevated: #f9fbf9;
-  --border:      #dbe5dc;
-  --border-subtle: #edf3ee;
+  --bg: #eef3f1;
+  --bg-card: #ffffff;
+  --bg-elevated: #f7faf8;
+  --border: #dfe9e4;
+  --line: #d5e0db;
 
-  /* Accent palette */
-  --sage:        #2d6a4f;
-  --sage-dim:    #52b788;
-  --sage-light:  #eaf4ed;
-  --amber:       #d97706;
-  --amber-dim:   #b45309;
-  --amber-light: #fffbeb;
-  --red-alert:   #dc2626;
-  --red-light:   #fef2f2;
-  --blue-cool:   #0284c7;
-  --blue-light:  #f0f9ff;
+  --title: #1b2d2a;
+  --text-primary: #1f2a28;
+  --text-muted: #5d6d68;
+  --text-faint: #8ea29c;
 
-  /* Text */
-  --text-primary: #152419;
-  --text-muted:   #496150;
-  --text-faint:   #7d9885;
+  --primary: #1d3c36;
+  --primary-soft: #ebf3f1;
+  --accent: #5b8c7d;
+  --accent-soft: #edf6f3;
+  --sage: #2d6a35;
+  --sage-light: #edf7ee;
+  --amber: #d97706;
+  --amber-light: #fff4d6;
+  --amber-dim: #9a5b00;
+  --success-strong: #2f7d63;
+  --success-soft: #eaf8f3;
+  --warning-strong: #d87b1f;
+  --warning-soft: #fff5ea;
+  --danger-strong: #b94d4d;
+  --danger-soft: #fff1f1;
 
-  /* Shadows */
-  --shadow-sm:  0 2px 8px rgba(15, 35, 20, 0.05);
-  --shadow-md:  0 8px 24px -4px rgba(15, 35, 20, 0.08), 0 2px 6px -1px rgba(15, 35, 20, 0.04);
-  --shadow-lg:  0 16px 40px -8px rgba(15, 35, 20, 0.12);
-
-  /* Glow effects */
-  --glow-sage:  0 4px 20px rgba(45, 106, 79, 0.12);
-  --glow-amber: 0 4px 20px rgba(217, 119, 6, 0.15);
+  --shadow-sm: 0 6px 18px rgba(16, 27, 23, 0.04);
+  --shadow-md: 0 12px 28px rgba(16, 27, 23, 0.08);
+  --shadow-lg: 0 20px 42px rgba(17, 30, 27, 0.1);
 }
 
-/* ── Reset ────────────────────────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-/* ── Base ─────────────────────────────────────────────────────────────────── */
 html {
   font-size: 16px;
   scroll-behavior: smooth;
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: var(--bg);
+  font-family: 'Manrope', sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(99, 146, 127, 0.12), transparent 30%),
+    linear-gradient(180deg, #f7f5f2 0%, #eef4ee 100%);
   color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  background-image:
-    radial-gradient(ellipse 70% 50% at 10% 0%, rgba(82, 183, 136, 0.08) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 50% at 90% 100%, rgba(217, 119, 6, 0.05) 0%, transparent 70%);
 }
 
 #root {
   min-height: 100vh;
 }
 
-/* ── Typography ───────────────────────────────────────────────────────────── */
 h1, h2, h3, h4, h5 {
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.2;
+  font-weight: 800;
+  color: var(--title);
+  line-height: 1.1;
 }
 
-/* ── Scrollbar ────────────────────────────────────────────────────────────── */
-::-webkit-scrollbar       { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+::-webkit-scrollbar       { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #edf2ef; }
+::-webkit-scrollbar-thumb { background: #cbd7d2; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #b2c3bd; }
 
-/* ── Utility classes ──────────────────────────────────────────────────────── */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -98,66 +87,62 @@ h1, h2, h3, h4, h5 {
   align-items: center;
   gap: 4px;
   font-size: 0.68rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  padding: 3px 10px;
-  border-radius: 20px;
+  padding: 4px 9px;
+  border-radius: 999px;
   border: 1px solid;
 }
 
-.badge--sage  { color: var(--sage);       border-color: rgba(45, 106, 79, 0.3); background: var(--sage-light); }
-.badge--amber { color: var(--amber-dim);  border-color: rgba(217, 119, 6, 0.3); background: var(--amber-light); }
-.badge--red   { color: var(--red-alert);  border-color: rgba(220, 38, 38, 0.3); background: var(--red-light); }
-.badge--muted { color: var(--text-muted); border-color: var(--border);         background: var(--bg-elevated); }
+.badge--sage  { color: var(--success-strong); border-color: rgba(47,125,99,0.2); background: var(--success-soft); }
+.badge--amber { color: var(--warning-strong); border-color: rgba(216,123,31,0.2); background: var(--warning-soft); }
+.badge--red   { color: var(--danger-strong); border-color: rgba(185,77,77,0.2); background: var(--danger-soft); }
+.badge--muted { color: var(--text-muted); border-color: var(--border); background: var(--bg-elevated); }
 
-/* ── Connection dot animation ─────────────────────────────────────────────── */
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.5; transform: scale(0.85); }
+  50%      { opacity: 0.65; transform: scale(0.9); }
 }
 .pulse { animation: pulse-dot 1.8s ease-in-out infinite; }
 
-/* ── Fade-in for new content ──────────────────────────────────────────────── */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 .fade-in { animation: fade-in 0.35s ease; }
 
-/* ── Tab panel ────────────────────────────────────────────────────────────── */
 .tab-bar {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 4px;
+  border-radius: 14px;
+  padding: 5px;
   width: fit-content;
   box-shadow: var(--shadow-sm);
 }
 
 .tab-btn {
-  background: none;
+  background: transparent;
   border: none;
-  padding: 8px 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  padding: 9px 18px;
+  font-size: 0.78rem;
+  font-weight: 700;
   color: var(--text-muted);
   cursor: pointer;
-  border-radius: 9px;
+  border-radius: 10px;
   font-family: inherit;
   letter-spacing: 0.02em;
   transition: all 0.2s ease;
 }
-.tab-btn:hover:not(.active) { color: var(--text-primary); background: var(--bg-elevated); }
+.tab-btn:hover:not(.active) { color: var(--title); background: var(--bg-elevated); }
 .tab-btn.active {
-  background: var(--sage);
+  background: var(--primary);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(45, 106, 79, 0.25);
+  box-shadow: 0 8px 20px rgba(29, 60, 54, 0.16);
 }
 
-/* ── Number input remove arrows ───────────────────────────────────────────── */
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
 input[type=number] { -moz-appearance: textfield; }

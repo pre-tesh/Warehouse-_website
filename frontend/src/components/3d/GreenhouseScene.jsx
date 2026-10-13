@@ -26,7 +26,7 @@ export default function GreenhouseScene() {
     : 0.5;
 
   return (
-    <div style={{ width: '100%', height: '100%', borderRadius: '20px', overflow: 'hidden', background: '#eaf2eb' }}>
+    <div style={{ width: '100%', height: '100%', borderRadius: '0', overflow: 'hidden', background: '#f8f8f5' }}>
       <Canvas
         camera={{ position: [5.5, 4.2, 7.5], fov: 42 }}
         gl={{ antialias: true, alpha: true }}
@@ -57,7 +57,7 @@ export default function GreenhouseScene() {
         />
 
         {/* ── Soft atmospheric mist (humidity dependent) ───────────────────── */}
-        <fogExp2 attach="fog" color="#dbe6dc" density={0.008 + humidityNorm * 0.025} />
+        <fogExp2 attach="fog" color="#eef4ef" density={0.008 + humidityNorm * 0.02} />
 
         <Suspense fallback={null}>
           {/* ── Grow light (driven by actuator state) ─────────────────────── */}
@@ -72,7 +72,7 @@ export default function GreenhouseScene() {
           {/* ── Ground plane / Garden patio tile ──────────────────────────── */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.5, 0]} receiveShadow>
             <planeGeometry args={[30, 30]} />
-            <meshStandardMaterial color="#d4e0d5" roughness={0.8} />
+            <meshStandardMaterial color="#ebf0ea" roughness={0.8} />
           </mesh>
         </Suspense>
 

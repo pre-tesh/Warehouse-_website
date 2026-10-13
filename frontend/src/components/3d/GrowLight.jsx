@@ -1,128 +1,101 @@
-/**
- * GrowLight.jsx
- * The physical grow light fixture and Three.js light sources.
- *
- * Driven by actuatorState:
- *   light_on   → toggles visibility/intensity of spot + point lights
- *   brightness → maps 0-255 to light intensity (lerped smoothly)
- *   mode       → no visual difference, but shown in UI
- *
- * Uses useFrame to lerp all light properties for smooth transitions.
- */
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-export function GrowLight({ actuator }) {
-  const spotRef  = useRef();
-  const pointRef = useRef();
-  const glowRef  = useRef(); // emissive sphere representing the bulb
+const ROOF_GRID = [-0.72, 0, 0.72];
 
-  // Lerped intensity value (avoids snapping)
+export function GrowLight({ actuator }) {
+  const bulbRefs = useRef([]);
+  const haloRefs = useRef([]);
+  const lightRefs = useRef([]);
   const intensityRef = useRef(0);
 
   useFrame((_, delta) => {
-    if (!spotRef.current || !pointRef.current) return;
-
-    // Target intensity: 0 when off, 0.1–3.0 mapped from brightness 0-255
     const targetIntensity = actuator.light_on
-      ? 0.5 + (actuator.brightness / 255) * 2.5
+      ? 0.25 + (actuator.brightness / 255) * 2.9
       : 0;
 
-    // Smooth lerp toward target (0.06 factor = ~2 second transition)
     intensityRef.current = THREE.MathUtils.lerp(
       intensityRef.current,
       targetIntensity,
-      delta * 2.5
+      delta * 3.2
     );
 
     const i = intensityRef.current;
+    const warm = new THREE.Color('#ffd57a');
+    const cool = new THREE.Color('#dfe7ff');
+    const bulbTint = new THREE.Color().lerpColors(cool, warm, Math.min(i / 2.8, 1));
 
-    // SpotLight: warm amber-red grow-light color
-    spotRef.current.intensity = i * 1.2;
-    spotRef.current.color.set(i > 0.05 ? '#ffb347' : '#ffffff');
+    bulbRefs.current.forEach((bulb, index) => {
+      if (!bulb || !bulb.material) return;
+      const scaleBoost = 0.75 + (i * 0.5) + ((index % 3) * 0.04);
+      bulb.scale.setScalar(scaleBoost);
+      bulb.material.color.copy(bulbTint);
+      bulb.material.emissive.copy(bulbTint.clone().multiplyScalar(0.9));
+      bulb.material.emissiveIntensity = i * 0.7;
+      bulb.material.opacity = actuator.light_on ? 0.9 : 0.18;
+    });
 
-    // PointLight: softer fill
-    pointRef.current.intensity = i * 0.6;
-    pointRef.current.color.set('#ff9a2a');
+    haloRefs.current.forEach((halo) => {
+      if (!halo) return;
+      const scale = 1.2 + i * 1.1;
+      halo.scale.setScalar(scale);
+      halo.material.opacity = actuator.light_on ? 0.22 + i * 0.14 : 0.02;
+    });
 
-    // Emissive glow on the bulb mesh
-    if (glowRef.current?.material) {
-      glowRef.current.material.emissiveIntensity = THREE.MathUtils.lerp(
-        glowRef.current.material.emissiveIntensity,
-        i > 0.05 ? i * 0.8 : 0,
-        delta * 3
-      );
-      glowRef.current.material.opacity = 0.4 + Math.min(i * 0.3, 0.5);
-    }
+    lightRefs.current.forEach((light, index) => {
+      if (!light) return;
+      const burst = index % 2 === 0 ? 0.9 : 1.2;
+      light.intensity = actuator.light_on ? i * burst : 0;
+      light.distance = 3.6 + i * 1.5;
+      light.color.copy(bulbTint.clone().multiplyScalar(1.08));
+    });
   });
 
-  const fixtureY  = 2.2; // height of the fixture inside the greenhouse
-  const fixtureColor = '#1e3a20';
-
   return (
-    <group position={[0, fixtureY, 0]}>
-      {/* ── Fixture body (mounting bar) ─────────────────────────────────── */}
+    <group position={[0, 2.2, 0]}>
       <mesh castShadow>
-        <boxGeometry args={[1.2, 0.08, 0.2]} />
-        <meshStandardMaterial color={fixtureColor} roughness={0.6} metalness={0.5} />
+        <boxGeometry args={[1.6, 0.08, 0.2]} />
+        <meshStandardMaterial color="#1e3a20" roughness={0.6} metalness={0.5} />
       </mesh>
 
-      {/* ── Hanging cable ──────────────────────────────────────────────── */}
-      <mesh position={[0, 0.3, 0]}>
-        <cylinderGeometry args={[0.012, 0.012, 0.6, 6]} />
-        <meshStandardMaterial color="#0d1a0f" roughness={0.9} />
-      </mesh>
+      {ROOF_GRID.flatMap((x) =>
+        ROOF_GRID.map((z, index) => {
+          const bulbIndex = ROOF_GRID.indexOf(x) * ROOF_GRID.length + index;
+          const key = `${x}-${z}`;
 
-      {/* ── Bulb (emissive sphere) ──────────────────────────────────────── */}
-      <mesh ref={glowRef} position={[0, -0.12, 0]}>
-        <sphereGeometry args={[0.12, 12, 12]} />
-        <meshStandardMaterial
-          color="#ffb347"
-          emissive="#ff8c00"
-          emissiveIntensity={0}
-          transparent
-          opacity={0.5}
-          roughness={0.1}
-        />
-      </mesh>
+          return (
+            <group key={key} position={[x, -0.18, z]}>
+              <mesh ref={(el) => { bulbRefs.current[bulbIndex] = el; }}>
+                <sphereGeometry args={[0.12, 20, 20]} />
+                <meshStandardMaterial
+                  color="#dfe7ff"
+                  emissive="#ffd57a"
+                  emissiveIntensity={0}
+                  transparent
+                  opacity={0.8}
+                  roughness={0.1}
+                  metalness={0.1}
+                />
+              </mesh>
 
-      {/* ── LED indicator dots along fixture ──────────────────────────── */}
-      {[-0.4, -0.2, 0, 0.2, 0.4].map((x, i) => (
-        <mesh key={i} position={[x, -0.05, 0]}>
-          <sphereGeometry args={[0.025, 6, 6]} />
-          <meshStandardMaterial
-            color="#ff4444"
-            emissive="#ff0000"
-            emissiveIntensity={actuator.light_on ? 1.5 : 0}
-          />
-        </mesh>
-      ))}
+              <mesh ref={(el) => { haloRefs.current[bulbIndex] = el; }} scale={1}>
+                <sphereGeometry args={[0.19, 16, 16]} />
+                <meshBasicMaterial color="#ffe39a" transparent opacity={0.08} side={THREE.DoubleSide} />
+              </mesh>
 
-      {/* ── SpotLight: main directional grow light ─────────────────────── */}
-      <spotLight
-        ref={spotRef}
-        position={[0, 0, 0]}
-        target-position={[0, -10, 0]}
-        angle={0.7}
-        penumbra={0.4}
-        intensity={0}
-        color="#ffb347"
-        castShadow
-        shadow-mapSize={[1024, 1024]}
-        distance={8}
-        decay={1.5}
-      />
-
-      {/* ── PointLight: ambient fill ───────────────────────────────────── */}
-      <pointLight
-        ref={pointRef}
-        position={[0, -0.15, 0]}
-        intensity={0}
-        color="#ff9a2a"
-        distance={5}
-        decay={2}
-      />
+              <pointLight
+                ref={(el) => { lightRefs.current[bulbIndex] = el; }}
+                position={[0, -0.06, 0]}
+                intensity={0}
+                color="#ffd57a"
+                distance={3.2}
+                decay={2}
+              />
+            </group>
+          );
+        })
+      )}
     </group>
   );
 }

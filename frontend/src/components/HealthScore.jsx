@@ -24,29 +24,52 @@ function arcPath(cx, cy, r, startDeg, endDeg) {
   return `M ${s.x} ${s.y} A ${r} ${r} 0 ${large} 1 ${e.x} ${e.y}`;
 }
 
-export default function HealthScore({ history, profile }) {
+export default function HealthScore({ history, profile, compact = false }) {
   const score = useMemo(() => computeHealthScore(history ?? [], profile), [history, profile]);
 
-  // Latest evaluation for advice
   const latest = history?.[history.length - 1];
   const evaluation = latest ? evaluateReading(latest, profile) : null;
   const advice = evaluation ? generateAdvice(evaluation, profile.plant_name) : [];
 
-  const color     = healthScoreColor(score);
-  const scoreAngle = (score / 100) * 280; // arc spans 280° (from -140° to +140°)
+  const color = healthScoreColor(score);
+  const statusText = score >= 75 ? 'Thriving' : score >= 45 ? 'Needs Attention' : 'Stressed';
+  const scoreAngle = (score / 100) * 280;
   const startAngle = 130;
-  const endAngle   = startAngle + (score / 100) * 280;
+  const endAngle = startAngle + scoreAngle;
 
   const trackPath = arcPath(60, 60, 48, 130, 130 + 280);
-  const fillPath  = score > 0 ? arcPath(60, 60, 48, 130, endAngle) : '';
+  const fillPath = score > 0 ? arcPath(60, 60, 48, 130, endAngle) : '';
+
+  if (compact) {
+    return (
+      <div className="health-score health-score--compact" style={{ '--status-color': color }}>
+        <div className="health-score__status-row">
+          <span className="health-score__status-dot" />
+          <span className="health-score__status-label">{statusText}</span>
+          <span className="health-score__score-pill">{score}</span>
+        </div>
+
+        <div className="health-score__hover-panel">
+          <div className="health-score__hover-title">Plant status</div>
+          <div className="health-score__hover-score">{score}/100</div>
+          <div className="health-score__advice">
+            {advice.map((text, i) => (
+              <div key={i} className="health-score__advice-item">
+                <span className="health-score__advice-dot" style={{ background: color }} />
+                <span>{text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="health-score">
       <div className="health-score__arc-wrap">
         <svg viewBox="0 0 120 120" className="health-score__svg">
-          {/* Track */}
           <path d={trackPath} fill="none" stroke="#1e3020" strokeWidth="8" strokeLinecap="round" />
-          {/* Fill */}
           {fillPath && (
             <path
               d={fillPath}
@@ -57,7 +80,6 @@ export default function HealthScore({ history, profile }) {
               style={{ filter: `drop-shadow(0 0 6px ${color}88)`, transition: 'stroke 0.5s ease' }}
             />
           )}
-          {/* Score text */}
           <text x="60" y="56" textAnchor="middle" fontSize="22" fontWeight="700" fill={color}>
             {score}
           </text>
@@ -68,7 +90,7 @@ export default function HealthScore({ history, profile }) {
       </div>
 
       <div className="health-score__label" style={{ color }}>
-        {score >= 75 ? 'Thriving' : score >= 45 ? 'Needs Attention' : 'Stressed'}
+        {statusText}
       </div>
 
       <div className="health-score__advice">

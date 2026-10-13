@@ -38,8 +38,7 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard">
-      {/* ── Header ──────────────────────────────────────────────────────── */}
-      <header className="dashboard__header">
+      <header className="dashboard__topbar">
         <div className="dashboard__title-group">
           <div className="dashboard__logo">🌿</div>
           <div>
@@ -47,6 +46,7 @@ export default function Dashboard() {
             <p className="dashboard__subtitle">ESP32 · {profile.plant_name} · Real-time monitoring</p>
           </div>
         </div>
+
         <div className="dashboard__header-right">
           <div className={`dashboard__conn ${connected ? 'connected' : 'disconnected'}`}>
             <span className="dashboard__conn-dot pulse" />
@@ -63,6 +63,11 @@ export default function Dashboard() {
           <div className="dashboard__scene-inner">
             <GreenhouseScene />
           </div>
+
+          <div className="dashboard__scene-status">
+            <HealthScore history={history} profile={profile} compact />
+          </div>
+
           <div className="dashboard__scene-label">
             3D Digital Twin — Orbit to explore
           </div>
@@ -88,10 +93,7 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* Health score */}
-          <HealthScore history={history} profile={profile} />
-
-          {/* Actuator control */}
+          {/* Grow light control sits directly below metrics for faster access */}
           <ActuatorPanel />
         </aside>
       </main>
