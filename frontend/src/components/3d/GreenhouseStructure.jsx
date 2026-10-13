@@ -71,7 +71,7 @@ export function GreenhouseStructure({ humidityNorm = 0 }) {
       ))}
 
       {/* ── Roof ridge beam ───────────────────────────────────────────────── */}
-      <mesh position={[0, H - 1.5 + roofH - 0.06, 0]} castShadow>
+      <mesh position={[0, H - 1.5 + roofH - 0.06, 0]} rotation={[0, 0, 0]} castShadow>
         <boxGeometry args={[0.12, 0.12, D - 0.4]} />
         <meshStandardMaterial color={frameColor} roughness={0.5} metalness={0.6} />
       </mesh>
@@ -80,16 +80,17 @@ export function GreenhouseStructure({ humidityNorm = 0 }) {
 }
 
 function RoofPanel({ humidityNorm, W, D, roofH, H, side }) {
-  const sign   = side === 'left' ? -1 : 1;
-  const angle  = Math.atan2(roofH, W / 2);
-  const panelW = Math.sqrt((W / 2) ** 2 + roofH ** 2);
-  const xOff   = sign * W / 4;
-  const yPos   = H - 1.5 + roofH / 2;
+  const sign     = side === 'left' ? -1 : 1;
+  const angle    = Math.atan2(roofH, W / 2);
+  const panelW   = Math.sqrt((W / 2) ** 2 + roofH ** 2);
+  const panelLen = D - 0.2;
+  const yPos     = H - 1.5 + roofH * 0.58;
+  const zPos     = 0;
 
   return (
     <>
-      <mesh position={[xOff, yPos, 0]} rotation={[0, 0, -sign * angle]} castShadow>
-        <planeGeometry args={[panelW, D]} />
+      <mesh position={[-sign * (W / 4), yPos, zPos]} rotation={[0, 0, sign * angle]} castShadow>
+        <boxGeometry args={[panelW, 0.04, panelLen]} />
         <meshPhysicalMaterial
           color={new THREE.Color().lerpColors(new THREE.Color('#cce5d0'), new THREE.Color('#b3d9e8'), humidityNorm)}
           transparent
@@ -103,8 +104,8 @@ function RoofPanel({ humidityNorm, W, D, roofH, H, side }) {
       </mesh>
       {/* Roof grid */}
       {[-D/3, 0, D/3].map((z, i) => (
-        <mesh key={i} position={[xOff, yPos, z]} rotation={[0, 0, -sign * angle]}>
-          <boxGeometry args={[panelW, 0.04, 0.04]} />
+        <mesh key={i} position={[-sign * (W / 4), yPos, z]} rotation={[0, 0, sign * angle]}>
+          <boxGeometry args={[panelW, 0.02, 0.04]} />
           <meshStandardMaterial color="#24482b" roughness={0.4} metalness={0.5} />
         </mesh>
       ))}
