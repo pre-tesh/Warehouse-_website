@@ -29,7 +29,7 @@ import './Dashboard.css';
 const TABS = ['Charts', 'Events', 'Profile'];
 
 export default function Dashboard() {
-  const { latest, history, profile, events, connected } = useSensor();
+  const { latest, history, profile, events, connected, device } = useSensor();
   const [activeTab, setActiveTab] = useState('Charts');
 
   const now = latest?.timestamp
@@ -48,9 +48,9 @@ export default function Dashboard() {
         </div>
 
         <div className="dashboard__header-right">
-          <div className={`dashboard__conn ${connected ? 'connected' : 'disconnected'}`}>
+          <div className={`dashboard__conn ${connected && device.online ? 'connected' : 'disconnected'}`}>
             <span className="dashboard__conn-dot pulse" />
-            {connected ? 'Live' : 'Connecting…'}
+            {!connected ? 'Connecting to server…' : device.online ? 'Live · ESP32 online' : 'ESP32 offline'}
           </div>
           <div className="dashboard__timestamp">Last update: {now}</div>
         </div>
@@ -80,7 +80,7 @@ export default function Dashboard() {
             {[
               { metric: 'temp',     idealRange: profile.ideal_temp },
               { metric: 'humidity', idealRange: profile.ideal_humidity },
-              { metric: 'lux',      idealRange: profile.ideal_lux },
+              { metric: 'light',    idealRange: profile.ideal_light },
               { metric: 'soil',     idealRange: profile.ideal_soil },
             ].map(({ metric, idealRange }) => (
               <SensorCard

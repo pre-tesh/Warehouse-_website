@@ -1,6 +1,6 @@
 /**
  * ActuatorContext.jsx
- * Provides actuator state and control functions throughout the app.
+ * Provides the state of the 3 LEDs and functions to switch them.
  */
 import { createContext, useContext, useEffect, useReducer, useRef } from 'react';
 import { getDataService } from '../data/mockDataService';
@@ -8,9 +8,7 @@ import { getDataService } from '../data/mockDataService';
 const ActuatorContext = createContext(null);
 
 const initialState = {
-  light_on:   false,
-  brightness: 0,
-  mode:       'auto',
+  leds: [false, false, false],
 };
 
 function reducer(state, action) {
@@ -25,25 +23,45 @@ function reducer(state, action) {
 export function ActuatorProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const svcRef = useRef(null);
+  const ledsRef = useRef(state.leds);
+  ledsRef.current = state.leds;
 
   useEffect(() => {
     const svc = getDataService();
     svcRef.current = svc;
-    svc.on('actuator', p => dispatch({ type: 'UPDATE', payload: p }));
+    const onActuator = p => dispatch({ type: 'UPDATE', payload: p });
+    svc.on('actuator', onActuator);
+    return () => svc.off('actuator', onActuator);
   }, []);
 
-  const setManual = async (patch) => {
-    const updated = await svcRef.current?.sendActuatorCommand({ mode: 'manual', ...patch });
-    if (updated) dispatch({ type: 'UPDATE', payload: updated });
+  /** Optimistically update the UI, then tell the backend. Roll back on failure. */
+  const send = async (nextLeds, request) => {
+    const previous = ledsRef.current;
+    dispatch({ type: 'UPDATE', payload: { leds: nextLeds } });
+    try {
+      const updated = await request();
+      if (updated) dispatch({ type: 'UPDATE', payload: updated });
+    } catch (err) {
+      console.error(err);
+      dispatch({ type: 'UPDATE', payload: { leds: previous } });
+    }
   };
 
-  const setAutoMode = async () => {
-    const updated = await svcRef.current?.sendActuatorCommand({ mode: 'auto' });
-    if (updated) dispatch({ type: 'UPDATE', payload: updated });
+  const setLed = (index, on) => {
+    const next = [...ledsRef.current];
+    next[index] = on;
+    return send(next, () => svcRef.current.setLed(index, on));
+  };
+
+  const toggleLed = (index) => setLed(index, !ledsRef.current[index]);
+
+  const setAll = (on) => {
+    const next = [on, on, on];
+    return send(next, () => svcRef.current.setAllLeds(next));
   };
 
   return (
-    <ActuatorContext.Provider value={{ actuator: state, setManual, setAutoMode }}>
+    <ActuatorContext.Provider value={{ actuator: state, setLed, toggleLed, setAll }}>
       {children}
     </ActuatorContext.Provider>
   );

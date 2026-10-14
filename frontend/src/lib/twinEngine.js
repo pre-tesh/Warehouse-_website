@@ -5,7 +5,6 @@
  *   • Per-metric threshold evaluation   (evaluateMetric)
  *   • Overall plant health score        (computeHealthScore)
  *   • Human-readable advice generation  (generateAdvice)
- *   • Auto-light brightness mapping     (computeAutoLightBrightness)
  *
  * Intentionally kept framework-agnostic (pure JS) so it can be unit-tested
  * independently of any React/WebSocket infrastructure.
@@ -22,7 +21,7 @@
  * @typedef {{
  *   temp: MetricEval,
  *   humidity: MetricEval,
- *   lux: MetricEval,
+ *   light: MetricEval,
  *   soil: MetricEval,
  * }} ReadingEval
  */
@@ -71,7 +70,7 @@ export function evaluateReading(reading, profile) {
   return {
     temp:     evaluateMetric(reading.temp,     profile.ideal_temp),
     humidity: evaluateMetric(reading.humidity, profile.ideal_humidity),
-    lux:      evaluateMetric(reading.lux,      profile.ideal_lux),
+    light:    evaluateMetric(reading.light,    profile.ideal_light),
     soil:     evaluateMetric(reading.soil,     profile.ideal_soil),
   };
 }
@@ -97,11 +96,11 @@ export function computeHealthScore(history, profile) {
   const window = history.slice(-HEALTH_WINDOW);
   if (window.length === 0) return 100;
 
-  const metrics = ['temp', 'humidity', 'lux', 'soil'];
+  const metrics = ['temp', 'humidity', 'light', 'soil'];
   const profileKeys = {
     temp:     'ideal_temp',
     humidity: 'ideal_humidity',
-    lux:      'ideal_lux',
+    light:    'ideal_light',
     soil:     'ideal_soil',
   };
 
@@ -130,7 +129,7 @@ export function computeHealthScore(history, profile) {
 const METRIC_LABELS = {
   temp:     'Temperature',
   humidity: 'Humidity',
-  lux:      'Light (lux)',
+  light:    'Light level',
   soil:     'Soil moisture',
 };
 
@@ -144,8 +143,8 @@ const ADVICE_ACTIONS = {
     low:  'Consider misting the leaves or placing a water tray nearby.',
     high: 'Increase airflow to reduce humidity and prevent mould.',
   },
-  lux: {
-    low:  'Consider turning on the grow light or moving the plant closer to a window.',
+  light: {
+    low:  'Consider turning on more grow lights or moving the plant closer to a window.',
     high: 'Provide some shade or move the plant away from direct sunlight.',
   },
   soil: {
@@ -165,7 +164,7 @@ const ADVICE_ACTIONS = {
  */
 export function generateAdvice(evaluation, plantName) {
   const advice = [];
-  const metrics = ['temp', 'humidity', 'lux', 'soil'];
+  const metrics = ['temp', 'humidity', 'light', 'soil'];
 
   for (const metric of metrics) {
     const { status } = evaluation[metric];
@@ -185,6 +184,7 @@ export function generateAdvice(evaluation, plantName) {
   return advice;
 }
 
+<<<<<<< HEAD
 // ── Auto-light control ────────────────────────────────────────────────────────
 
 /**
@@ -228,6 +228,8 @@ export function shouldAutoLightBeOn(lux, idealLux) {
   return computeAutoLightBrightness(lux, idealLux) > 0;
 }
 
+=======
+>>>>>>> 711be963956c79e45fcde77565a39b382d15db42
 // ── Health score color helper ─────────────────────────────────────────────────
 
 /**

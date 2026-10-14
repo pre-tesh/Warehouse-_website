@@ -11,7 +11,7 @@ import './HistoryCharts.css';
 const METRICS = [
   { key: 'temp',     label: 'Temperature', unit: '°C',  color: '#2d6a4f', profileKey: 'ideal_temp' },
   { key: 'humidity', label: 'Humidity',    unit: '%',   color: '#0284c7', profileKey: 'ideal_humidity' },
-  { key: 'lux',      label: 'Light (Lux)', unit: ' lux', color: '#d97706', profileKey: 'ideal_lux' },
+  { key: 'light',    label: 'Light Level', unit: '%',   color: '#d97706', profileKey: 'ideal_light' },
   { key: 'soil',     label: 'Soil Moisture',unit: '%',   color: '#7c3aed', profileKey: 'ideal_soil' },
 ];
 

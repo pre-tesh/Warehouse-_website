@@ -1,138 +1,85 @@
 # 🌿 Mini Greenhouse Digital Twin
 
-Real-time ESP32 sensor dashboard with a live 3D greenhouse visualization.
+Real-time ESP32 sensor dashboard with a live 3D greenhouse and 3 controllable lights.
 
-## Quick Start
+```
+ Greenhouse                     Laptop (server)                 Tablet (demo screen)
+┌────────────┐  POST /api/esp/data  ┌───────────────────┐  WebSocket  ┌──────────────┐
+│   ESP32    │ ───────────────────► │ Node backend :4000│ ──────────► │  Dashboard   │
+│ DHT11 soil │ ◄─────────────────── │ React app    :5173│ ◄────────── │ (browser)    │
+│ LDR 3 LEDs │  {"set":[1,0,1]}     └───────────────────┘  REST       └──────────────┘
+└────────────┘
+```
 
-### 1. Backend (Node/Express + WebSocket)
+All three devices must be on the **same WiFi**.
+
+## Demo setup
+
+### 1. Laptop — start the server
 ```bash
-cd backend
-npm install
-npm start
-# → REST API: http://localhost:4000/api
-# → WebSocket: ws://localhost:4000/ws
-```
+# terminal 1
+cd backend && npm install && npm start      # API + WebSocket on :4000
 
-### 2. Frontend (React + Vite)
+# terminal 2
+cd frontend && npm install && npm run dev   # dashboard on :5173 (listens on the LAN)
+```
+Find the laptop's IP (`hostname -I` on Linux, `ipconfig` on Windows), e.g. `192.168.1.23`.
+If the ESP32 or tablet can't connect, allow ports **4000** and **5173** through the laptop firewall
+(Linux/ufw: `sudo ufw allow 4000/tcp && sudo ufw allow 5173/tcp`).
+
+### 2. ESP32 — flash `espcode.ino`
+Edit the top of the file:
+```cpp
+const char* WIFI_SSID   = "YourWifi";
+const char* WIFI_PASS   = "YourPassword";
+const char* SERVER_HOST = "192.168.1.23";   // the laptop's IP
+```
+Libraries: *DHT sensor library* + *Adafruit Unified Sensor*. ESP32 WiFi is 2.4 GHz only.
+Open the Serial Monitor (115200) — you should see `Connected! ESP32 IP: ...` and live readings.
+
+### 3. Tablet — open the dashboard
+Browse to `http://192.168.1.23:5173`. The header shows **Live · ESP32 online** once data arrives.
+(No config needed — the page talks to the backend on whatever host it was loaded from.)
+
+## Controlling the lights
+- **Website**: 3 buttons (Light 1/2/3) + All on / All off → reaches the ESP32 within ~1 s.
+- **Physical**: UP button lights the next LED, DOWN switches off the last lit one → shows on the website within ~1 s.
+- Both stay in sync; the 3D greenhouse shows the 3 bulbs lighting up.
+
+## No hardware? Simulate it
 ```bash
-cd frontend
-npm install
-npm run dev
-# → http://localhost:5173
+cd backend && USE_MOCK=1 npm start
 ```
 
----
+## Sensor calibration
+- **Soil**: capacitive sensors read *high when dry*. Set `SOIL_RAW_DRY` / `SOIL_RAW_WET` in `espcode.ino`
+  from the `raw` value on the Serial Monitor (sensor in air = dry, in water = wet).
+- **Light**: the LDR gives a relative **0–100 %** (not lux). Tune the ideal range in the dashboard's *Profile* tab.
+- **Wiring**: power the LDR divider from **3V3**, not 5V — a 5V divider can push GPIO35 above 3.3 V and damage the ESP32.
 
-## Project Structure
-
-```
-greenhouse-twin/
-├── backend/
-│   ├── server.js          # Express REST + WebSocket server
-│   └── mockGenerator.js   # Simulated sensor data (swap point for ESP32)
-│
-└── frontend/
-    └── src/
-        ├── data/
-        │   └── mockDataService.js   ← ⭐ SWAP THIS for real ESP32
-        ├── lib/
-        │   └── twinEngine.js        ← Core digital twin logic
-        ├── context/
-        │   ├── SensorContext.jsx
-        │   └── ActuatorContext.jsx
-        ├── components/
-        │   ├── 3d/
-        │   │   ├── GreenhouseScene.jsx
-        │   │   ├── GreenhouseStructure.jsx
-        │   │   ├── PlantModel.jsx
-        │   │   └── GrowLight.jsx
-        │   ├── SensorCard.jsx
-        │   ├── HealthScore.jsx
-        │   ├── ActuatorPanel.jsx
-        │   ├── HistoryCharts.jsx
-        │   ├── EventLog.jsx
-        │   └── PlantProfileEditor.jsx
-        └── pages/
-            └── Dashboard.jsx
-```
-
----
-
-## Connecting a Real ESP32
-
-The **only file to modify** is `frontend/src/data/mockDataService.js`.
-
-Change `VITE_BACKEND_URL` in `.env` to your ESP32/backend address:
-```env
-VITE_BACKEND_URL=http://192.168.1.100:4000
-```
-
-Your ESP32 backend must broadcast WebSocket messages in this format:
-```json
-{ "type": "sensor",   "payload": { "temp": 24.1, "humidity": 65.2, "lux": 3400, "soil": 58.0, "timestamp": "..." } }
-{ "type": "actuator", "payload": { "light_on": true, "brightness": 180, "mode": "auto" } }
-```
-
-No other frontend files need changing.
-
----
-
-## Sensor Data Schema
-
-```typescript
-SensorReading {
-  temp:      number   // °C
-  humidity:  number   // %
-  lux:       number   // lux
-  soil:      number   // %
-  timestamp: string   // ISO 8601
-}
-```
-
-## Plant Profile Schema
-
-```typescript
-PlantProfile {
-  plant_name:     string
-  ideal_temp:     [min: number, max: number]
-  ideal_humidity: [min: number, max: number]
-  ideal_lux:      [min: number, max: number]
-  ideal_soil:     [min: number, max: number]
-}
-```
-
-## Actuator Schema
-
-```typescript
-ActuatorState {
-  light_on:   boolean
-  brightness: number   // 0-255
-  mode:       'auto' | 'manual'
-}
-```
-
----
-
-## Twin Logic (twinEngine.js)
-
-| Function | Description |
-|----------|-------------|
-| `evaluateMetric(value, [min, max])` | Returns `{ status: 'ok'\|'low'\|'high', deviation }` |
-| `evaluateReading(reading, profile)` | Evaluates all 4 metrics at once |
-| `computeHealthScore(history, profile)` | Rolling 0-100 health score |
-| `generateAdvice(evaluation, plantName)` | Human-readable advice strings |
-| `computeAutoLightBrightness(lux, idealLux)` | Maps lux deficit → brightness 0-255 |
-
----
-
-## REST API Reference
+## API
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/sensor/latest` | Latest sensor reading |
-| GET | `/api/sensor/history?limit=100` | Historical readings |
-| GET | `/api/actuator` | Current actuator state |
-| POST | `/api/actuator` | Update actuator (manual override) |
-| GET | `/api/profile` | Active plant profile |
-| PUT | `/api/profile` | Update plant profile |
+| POST | `/api/esp/data` | ESP32 → server: `{temp, humidity, soil, light, leds:[0\|1,0\|1,0\|1]}`; reply may contain `{set:[...]}` |
+| POST | `/api/actuator` | Website → LED command: `{index:0-2, on:bool}` or `{leds:[b,b,b]}` |
+| GET | `/api/actuator` | Current LED state |
+| GET | `/api/device` | ESP32 online status |
+| GET | `/api/sensor/latest` · `/api/sensor/history?limit=100` | Readings |
+| GET/PUT | `/api/profile` | Plant ideal ranges (`ideal_temp`, `ideal_humidity`, `ideal_light`, `ideal_soil`) |
 | GET | `/api/events` | Event log |
+
+WebSocket `ws://<laptop>:4000/ws` pushes: `sensor`, `actuator`, `device`, `profile`, `history`, `events`, `event`.
+
+## Project structure
+```
+backend/
+  server.js          Express REST + WebSocket, ESP32 ingestion, LED command relay
+  mockGenerator.js   Fake readings (USE_MOCK=1 only)
+frontend/src/
+  data/mockDataService.js   WebSocket + REST client
+  context/                  SensorContext, ActuatorContext
+  components/               SensorCard, ActuatorPanel (3 buttons), charts, 3D scene…
+  lib/twinEngine.js         Health score + advice logic
+espcode.ino                 ESP32 firmware
+```

@@ -12,7 +12,7 @@ import './SensorCard.css';
 const METRIC_CONFIG = {
   temp:     { label: 'Temperature', unit: '°C', icon: '🌡️', decimals: 1 },
   humidity: { label: 'Humidity',    unit: '%',  icon: '💧', decimals: 1 },
-  lux:      { label: 'Light',       unit: ' lux', icon: '☀️', decimals: 0 },
+  light:    { label: 'Light',       unit: '%',  icon: '☀️', decimals: 0 },
   soil:     { label: 'Soil Moisture', unit: '%', icon: '🪴', decimals: 1 },
 };
 

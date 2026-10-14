@@ -1,98 +1,55 @@
 /**
  * ActuatorPanel.jsx
- * Controls for the grow light: Auto/Manual mode toggle, on/off switch,
- * and a brightness slider for manual mode.
+ * Three on/off buttons — one per physical LED in the greenhouse — plus
+ * "All on / All off" shortcuts. Commands go backend -> ESP32.
  */
 import { useActuator } from '../context/ActuatorContext';
+import { useSensor } from '../context/SensorContext';
 import './ActuatorPanel.css';
 
 export default function ActuatorPanel() {
-  const { actuator, setManual, setAutoMode } = useActuator();
-  const brightnessPercent = Math.round((actuator.brightness / 255) * 100);
-
-  let lightTone = 'Off';
-  if (actuator.light_on) {
-    if (brightnessPercent < 25) lightTone = 'Low';
-    else if (brightnessPercent < 60) lightTone = 'Balanced';
-    else if (brightnessPercent < 85) lightTone = 'High';
-    else lightTone = 'Peak';
-  }
+  const { actuator, toggleLed, setAll } = useActuator();
+  const { device } = useSensor();
+  const leds = actuator.leds ?? [false, false, false];
+  const onCount = leds.filter(Boolean).length;
 
   return (
     <div className="actuator-panel">
       <div className="actuator-panel__header">
-        <span className="actuator-panel__title">💡 Grow Light</span>
-        <span className={`actuator-panel__status ${actuator.light_on ? 'on' : 'off'}`}>
-          {actuator.light_on ? 'ON' : 'OFF'}
+        <span className="actuator-panel__title">💡 Grow Lights</span>
+        <span className={`actuator-panel__status ${onCount > 0 ? 'on' : 'off'}`}>
+          {onCount}/3 ON
         </span>
       </div>
 
-      <div className="actuator-panel__slider-top">
-        <div className="actuator-panel__slider-row">
-          <span className="actuator-panel__slider-label">Brightness</span>
-          <span className="actuator-panel__slider-value">{brightnessPercent}%</span>
-        </div>
-
-        <div className="actuator-panel__brightness-meter">
-          <div
-            className="actuator-panel__brightness-fill"
-            style={{ width: `${brightnessPercent}%`, opacity: actuator.light_on ? 1 : 0.25 }}
-          />
-        </div>
-
-        <input
-          type="range"
-          min="0"
-          max="255"
-          value={actuator.brightness}
-          disabled={actuator.mode !== 'manual'}
-          onChange={(e) => setManual({ light_on: parseInt(e.target.value) > 0, brightness: parseInt(e.target.value) })}
-          className="actuator-panel__slider"
-        />
-
-        <div className="actuator-panel__light-output">
-          <span className="actuator-panel__light-tone">{lightTone}</span>
-          <span className="actuator-panel__light-description">Warm, even crop lighting</span>
-        </div>
-      </div>
-
-      <div className="actuator-panel__mode-row">
-        <span className="actuator-panel__mode-label">Mode</span>
-        <div className="actuator-panel__mode-toggle">
+      <div className="actuator-panel__buttons">
+        {leds.map((on, i) => (
           <button
-            className={`mode-btn ${actuator.mode === 'auto' ? 'active' : ''}`}
-            onClick={setAutoMode}
+            key={i}
+            type="button"
+            className={`led-btn ${on ? 'on' : 'off'}`}
+            onClick={() => toggleLed(i)}
+            aria-pressed={on}
           >
-            Auto
+            <span className="led-btn__bulb">{on ? '💡' : '○'}</span>
+            <span className="led-btn__name">Light {i + 1}</span>
+            <span className="led-btn__state">{on ? 'ON' : 'OFF'}</span>
           </button>
-          <button
-            className={`mode-btn ${actuator.mode === 'manual' ? 'active' : ''}`}
-            onClick={() => setManual({ light_on: actuator.light_on, brightness: actuator.brightness })}
-          >
-            Manual
-          </button>
-        </div>
+        ))}
       </div>
 
-      <div className={`actuator-panel__manual ${actuator.mode === 'manual' ? 'enabled' : 'disabled'}`}>
-        <div className="actuator-panel__toggle-row">
-          <span className="actuator-panel__toggle-label">Light</span>
-          <label className="toggle-switch">
-            <input
-              type="checkbox"
-              checked={actuator.light_on}
-              disabled={actuator.mode !== 'manual'}
-              onChange={(e) => setManual({ light_on: e.target.checked, brightness: e.target.checked ? Math.max(actuator.brightness, 128) : 0 })}
-            />
-            <span className="toggle-thumb" />
-          </label>
-        </div>
+      <div className="actuator-panel__shortcuts">
+        <button type="button" className="shortcut-btn" onClick={() => setAll(true)} disabled={onCount === 3}>
+          All on
+        </button>
+        <button type="button" className="shortcut-btn" onClick={() => setAll(false)} disabled={onCount === 0}>
+          All off
+        </button>
       </div>
 
-      {actuator.mode === 'auto' && (
-        <div className="actuator-panel__auto-info">
-          <span>🤖</span>
-          <span>Auto mode: the roof light system reacts to lux and scales warmth and output to keep the plant within its ideal range.</span>
+      {!device.online && (
+        <div className="actuator-panel__warning">
+          ESP32 is offline — commands will be applied when it reconnects.
         </div>
       )}
     </div>

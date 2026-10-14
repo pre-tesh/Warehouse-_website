@@ -2,53 +2,48 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-const ROOF_GRID = [-0.72, 0, 0.72];
+// One bulb per physical LED: Light 1, 2, 3 (left to right)
+const BULB_X = [-0.72, 0, 0.72];
+
+const WARM = new THREE.Color('#ffd57a');
+const COOL = new THREE.Color('#dfe7ff');
+const tint = new THREE.Color();
 
 export function GrowLight({ actuator }) {
-  const bulbRefs = useRef([]);
-  const haloRefs = useRef([]);
+  const bulbRefs  = useRef([]);
+  const haloRefs  = useRef([]);
   const lightRefs = useRef([]);
-  const intensityRef = useRef(0);
+  const levels    = useRef([0, 0, 0]); // smoothed 0..1 per bulb
 
   useFrame((_, delta) => {
-    const targetIntensity = actuator.light_on
-      ? 0.25 + (actuator.brightness / 255) * 2.9
-      : 0;
+    BULB_X.forEach((_x, idx) => {
+      const on = Boolean(actuator.leds?.[idx]);
+      levels.current[idx] = THREE.MathUtils.lerp(levels.current[idx], on ? 1 : 0, delta * 4);
+      const k = levels.current[idx];
 
-    intensityRef.current = THREE.MathUtils.lerp(
-      intensityRef.current,
-      targetIntensity,
-      delta * 3.2
-    );
+      tint.lerpColors(COOL, WARM, k);
 
-    const i = intensityRef.current;
-    const warm = new THREE.Color('#ffd57a');
-    const cool = new THREE.Color('#dfe7ff');
-    const bulbTint = new THREE.Color().lerpColors(cool, warm, Math.min(i / 2.8, 1));
+      const bulb = bulbRefs.current[idx];
+      if (bulb?.material) {
+        bulb.scale.setScalar(0.85 + k * 0.45);
+        bulb.material.color.copy(tint);
+        bulb.material.emissive.copy(tint).multiplyScalar(0.9);
+        bulb.material.emissiveIntensity = k * 1.6;
+        bulb.material.opacity = 0.18 + k * 0.72;
+      }
 
-    bulbRefs.current.forEach((bulb, index) => {
-      if (!bulb || !bulb.material) return;
-      const scaleBoost = 0.75 + (i * 0.5) + ((index % 3) * 0.04);
-      bulb.scale.setScalar(scaleBoost);
-      bulb.material.color.copy(bulbTint);
-      bulb.material.emissive.copy(bulbTint.clone().multiplyScalar(0.9));
-      bulb.material.emissiveIntensity = i * 0.7;
-      bulb.material.opacity = actuator.light_on ? 0.9 : 0.18;
-    });
+      const halo = haloRefs.current[idx];
+      if (halo) {
+        halo.scale.setScalar(1.2 + k * 1.4);
+        halo.material.opacity = 0.02 + k * 0.3;
+      }
 
-    haloRefs.current.forEach((halo) => {
-      if (!halo) return;
-      const scale = 1.2 + i * 1.1;
-      halo.scale.setScalar(scale);
-      halo.material.opacity = actuator.light_on ? 0.22 + i * 0.14 : 0.02;
-    });
-
-    lightRefs.current.forEach((light, index) => {
-      if (!light) return;
-      const burst = index % 2 === 0 ? 0.9 : 1.2;
-      light.intensity = actuator.light_on ? i * burst : 0;
-      light.distance = 3.6 + i * 1.5;
-      light.color.copy(bulbTint.clone().multiplyScalar(1.08));
+      const light = lightRefs.current[idx];
+      if (light) {
+        light.intensity = k * 2.4;
+        light.distance = 3.6 + k * 2;
+        light.color.copy(tint);
+      }
     });
   });
 
@@ -59,43 +54,36 @@ export function GrowLight({ actuator }) {
         <meshStandardMaterial color="#1e3a20" roughness={0.6} metalness={0.5} />
       </mesh>
 
-      {ROOF_GRID.flatMap((x) =>
-        ROOF_GRID.map((z, index) => {
-          const bulbIndex = ROOF_GRID.indexOf(x) * ROOF_GRID.length + index;
-          const key = `${x}-${z}`;
+      {BULB_X.map((x, idx) => (
+        <group key={x} position={[x, -0.18, 0]}>
+          <mesh ref={(el) => { bulbRefs.current[idx] = el; }}>
+            <sphereGeometry args={[0.12, 20, 20]} />
+            <meshStandardMaterial
+              color="#dfe7ff"
+              emissive="#ffd57a"
+              emissiveIntensity={0}
+              transparent
+              opacity={0.18}
+              roughness={0.1}
+              metalness={0.1}
+            />
+          </mesh>
 
-          return (
-            <group key={key} position={[x, -0.18, z]}>
-              <mesh ref={(el) => { bulbRefs.current[bulbIndex] = el; }}>
-                <sphereGeometry args={[0.12, 20, 20]} />
-                <meshStandardMaterial
-                  color="#dfe7ff"
-                  emissive="#ffd57a"
-                  emissiveIntensity={0}
-                  transparent
-                  opacity={0.8}
-                  roughness={0.1}
-                  metalness={0.1}
-                />
-              </mesh>
+          <mesh ref={(el) => { haloRefs.current[idx] = el; }}>
+            <sphereGeometry args={[0.19, 16, 16]} />
+            <meshBasicMaterial color="#ffe39a" transparent opacity={0.02} side={THREE.DoubleSide} />
+          </mesh>
 
-              <mesh ref={(el) => { haloRefs.current[bulbIndex] = el; }} scale={1}>
-                <sphereGeometry args={[0.19, 16, 16]} />
-                <meshBasicMaterial color="#ffe39a" transparent opacity={0.08} side={THREE.DoubleSide} />
-              </mesh>
-
-              <pointLight
-                ref={(el) => { lightRefs.current[bulbIndex] = el; }}
-                position={[0, -0.06, 0]}
-                intensity={0}
-                color="#ffd57a"
-                distance={3.2}
-                decay={2}
-              />
-            </group>
-          );
-        })
-      )}
+          <pointLight
+            ref={(el) => { lightRefs.current[idx] = el; }}
+            position={[0, -0.06, 0]}
+            intensity={0}
+            color="#ffd57a"
+            distance={3.6}
+            decay={2}
+          />
+        </group>
+      ))}
     </group>
   );
 }
