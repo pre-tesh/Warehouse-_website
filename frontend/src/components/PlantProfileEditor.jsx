@@ -33,7 +33,7 @@ export default function PlantProfileEditor() {
   const ranges = [
     { field: 'ideal_temp',     label: 'Temperature', unit: '°C',  min: -10, max: 50 },
     { field: 'ideal_humidity', label: 'Humidity',    unit: '%',   min: 0,   max: 100 },
-    { field: 'ideal_lux',     label: 'Light',       unit: ' lux', min: 0,   max: 10000 },
+    { field: 'ideal_light',   label: 'Light',       unit: '%',   min: 0,   max: 100 },
     { field: 'ideal_soil',    label: 'Soil Moisture',unit: '%',  min: 0,   max: 100 },
   ];
 
@@ -63,7 +63,7 @@ export default function PlantProfileEditor() {
                   type="number"
                   min={min}
                   max={max}
-                  step={field === 'ideal_lux' ? 100 : 0.5}
+                  step={0.5}
                   value={draft[field]?.[0] ?? ''}
                   onChange={e => setRange(field, 0, e.target.value)}
                   className="profile-editor__input"
@@ -77,7 +77,7 @@ export default function PlantProfileEditor() {
                   type="number"
                   min={min}
                   max={max}
-                  step={field === 'ideal_lux' ? 100 : 0.5}
+                  step={0.5}
                   value={draft[field]?.[1] ?? ''}
                   onChange={e => setRange(field, 1, e.target.value)}
                   className="profile-editor__input"

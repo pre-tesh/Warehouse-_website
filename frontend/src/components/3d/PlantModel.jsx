@@ -28,7 +28,7 @@ export function PlantModel({ evaluation, latest, profile }) {
     if (evaluation.soil.status !== 'ok')     stressCount += 1.0;
     if (evaluation.temp.status !== 'ok')     stressCount += 0.7;
     if (evaluation.humidity.status !== 'ok') stressCount += 0.4;
-    if (evaluation.lux.status !== 'ok')      stressCount += 0.3;
+    if (evaluation.light.status !== 'ok')    stressCount += 0.3;
     return Math.min(stressCount / 2.4, 1);
   }
 

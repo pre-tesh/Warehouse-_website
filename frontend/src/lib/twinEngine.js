@@ -5,7 +5,6 @@
  *   • Per-metric threshold evaluation   (evaluateMetric)
  *   • Overall plant health score        (computeHealthScore)
  *   • Human-readable advice generation  (generateAdvice)
- *   • Auto-light brightness mapping     (computeAutoLightBrightness)
  *
  * Intentionally kept framework-agnostic (pure JS) so it can be unit-tested
  * independently of any React/WebSocket infrastructure.
@@ -22,7 +21,7 @@
  * @typedef {{
  *   temp: MetricEval,
  *   humidity: MetricEval,
- *   lux: MetricEval,
+ *   light: MetricEval,
  *   soil: MetricEval,
  * }} ReadingEval
  */
@@ -71,7 +70,7 @@ export function evaluateReading(reading, profile) {
   return {
     temp:     evaluateMetric(reading.temp,     profile.ideal_temp),
     humidity: evaluateMetric(reading.humidity, profile.ideal_humidity),
-    lux:      evaluateMetric(reading.lux,      profile.ideal_lux),
+    light:    evaluateMetric(reading.light,    profile.ideal_light),
     soil:     evaluateMetric(reading.soil,     profile.ideal_soil),
   };
 }
@@ -97,11 +96,11 @@ export function computeHealthScore(history, profile) {
   const window = history.slice(-HEALTH_WINDOW);
   if (window.length === 0) return 100;
 
-  const metrics = ['temp', 'humidity', 'lux', 'soil'];
+  const metrics = ['temp', 'humidity', 'light', 'soil'];
   const profileKeys = {
     temp:     'ideal_temp',
     humidity: 'ideal_humidity',
-    lux:      'ideal_lux',
+    light:    'ideal_light',
     soil:     'ideal_soil',
   };
 
@@ -130,7 +129,7 @@ export function computeHealthScore(history, profile) {
 const METRIC_LABELS = {
   temp:     'Temperature',
   humidity: 'Humidity',
-  lux:      'Light (lux)',
+  light:    'Light level',
   soil:     'Soil moisture',
 };
 
@@ -144,8 +143,8 @@ const ADVICE_ACTIONS = {
     low:  'Consider misting the leaves or placing a water tray nearby.',
     high: 'Increase airflow to reduce humidity and prevent mould.',
   },
-  lux: {
-    low:  'Consider turning on the grow light or moving the plant closer to a window.',
+  light: {
+    low:  'Consider turning on more grow lights or moving the plant closer to a window.',
     high: 'Provide some shade or move the plant away from direct sunlight.',
   },
   soil: {
@@ -165,7 +164,7 @@ const ADVICE_ACTIONS = {
  */
 export function generateAdvice(evaluation, plantName) {
   const advice = [];
-  const metrics = ['temp', 'humidity', 'lux', 'soil'];
+  const metrics = ['temp', 'humidity', 'light', 'soil'];
 
   for (const metric of metrics) {
     const { status } = evaluation[metric];
@@ -183,42 +182,6 @@ export function generateAdvice(evaluation, plantName) {
   }
 
   return advice;
-}
-
-// ── Auto-light control ────────────────────────────────────────────────────────
-
-/**
- * computeAutoLightBrightness()
- * Determines the LED grow-light brightness level based on current lux.
- *
- * Logic:
- *   - If lux ≥ luxMin  →  light is not needed, return 0
- *   - If lux < luxMin  →  linearly ramp brightness from 0 (at luxMin) to 255 (at 0 lux)
- *     brightness = (1 - lux / luxMin) × 255
- *
- * This means the darker it gets, the brighter the grow light will be,
- * proportionally compensating for the lux deficit.
- *
- * @param {number} lux
- * @param {[number, number]} idealLux  - [min, max]
- * @returns {number}  brightness 0-255
- */
-export function computeAutoLightBrightness(lux, [luxMin]) {
-  if (lux >= luxMin) return 0;
-  const ratio = 1 - lux / luxMin; // 0 at luxMin, 1 at 0 lux
-  return Math.round(Math.min(Math.max(ratio * 255, 0), 255));
-}
-
-/**
- * shouldAutoLightBeOn()
- * Convenience predicate for the auto-light decision.
- *
- * @param {number} lux
- * @param {[number, number]} idealLux
- * @returns {boolean}
- */
-export function shouldAutoLightBeOn(lux, idealLux) {
-  return computeAutoLightBrightness(lux, idealLux) > 0;
 }
 
 // ── Health score color helper ─────────────────────────────────────────────────

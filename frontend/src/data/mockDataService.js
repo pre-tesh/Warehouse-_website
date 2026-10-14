@@ -14,12 +14,13 @@
  *   3. No other files need changing.
  *
  * Current implementation:
- *   Connects to the local Node backend (which runs mockGenerator.js internally).
- *   The backend WebSocket path is ws://localhost:4000/ws.
+ *   Connects to the Node backend, which receives live data from the ESP32.
+ *   The backend WebSocket path is ws://<host>:4000/ws.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+// Default: same host the page was loaded from, port 4000 (works from phones/other PCs on the LAN too)
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || `http://${window.location.hostname}:4000`;
 const WS_URL      = BACKEND_URL.replace(/^http/, 'ws') + '/ws';
 
 /**
@@ -72,7 +73,7 @@ export function createDataService() {
   return {
     /**
      * Register a listener for a given event type.
-     * Types: 'sensor' | 'actuator' | 'profile' | 'history' | 'events' | 'event' | 'connected'
+     * Types: 'sensor' | 'actuator' | 'device' | 'profile' | 'history' | 'events' | 'event' | 'connected'
      */
     on(type, handler) {
       if (!handlers[type]) handlers[type] = new Set();
@@ -84,17 +85,28 @@ export function createDataService() {
     },
 
     /**
-     * Send an actuator command to the backend REST API.
-     * This is separate from the WebSocket because commands are infrequent writes.
-     *
-     * @param {Partial<ActuatorState>} patch
+     * Turn one of the 3 LEDs on/off (forwarded to the ESP32 by the backend).
+     * @param {number} index  0-2
+     * @param {boolean} on
      */
-    async sendActuatorCommand(patch) {
+    async setLed(index, on) {
       const res = await fetch(`${BACKEND_URL}/api/actuator`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(patch),
+        body:    JSON.stringify({ index, on }),
       });
+      if (!res.ok) throw new Error(`LED command failed (${res.status})`);
+      return res.json();
+    },
+
+    /** Set all LEDs at once. @param {boolean[]} leds */
+    async setAllLeds(leds) {
+      const res = await fetch(`${BACKEND_URL}/api/actuator`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ leds }),
+      });
+      if (!res.ok) throw new Error(`LED command failed (${res.status})`);
       return res.json();
     },
 
