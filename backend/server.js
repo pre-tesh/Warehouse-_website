@@ -68,9 +68,20 @@ function logEvent(message) {
  * @returns {number}           - brightness value 0-255
  */
 function computeAutoLightBrightness(lux, luxMin, luxMax) {
-  if (lux >= luxMin) return 0; // already in range — light off
-  // Linear ramp: 0 brightness at luxMin, 255 brightness at 0 lux
-  const ratio = 1 - lux / luxMin;
+  if (!Number.isFinite(lux) || !Number.isFinite(luxMin) || !Number.isFinite(luxMax)) {
+    return 0;
+  }
+
+  // Already inside the configured optimal lux window: keep the light off.
+  if (lux >= luxMin && lux <= luxMax) return 0;
+
+  // Above the preferred maximum: the greenhouse is already bright enough,
+  // so the light should remain off to avoid overshooting the target range.
+  if (lux > luxMax) return 0;
+
+  // Below the minimum target lux: ramp LED power up in proportion to the deficit.
+  const deficit = luxMin - lux;
+  const ratio = deficit / Math.max(luxMin, 1);
   return Math.round(clamp(ratio * 255, 0, 255));
 }
 
@@ -84,17 +95,17 @@ function clamp(v, lo, hi) { return Math.min(Math.max(v, lo), hi); }
 function applyAutoLight(reading) {
   if (actuatorState.mode !== 'auto') return;
 
-  const [luxMin] = plantProfile.ideal_lux;
-  const newBrightness = computeAutoLightBrightness(reading.lux, luxMin, plantProfile.ideal_lux[1]);
+  const [luxMin, luxMax] = plantProfile.ideal_lux || [0, 0];
+  const newBrightness = computeAutoLightBrightness(reading.lux, luxMin, luxMax);
   const shouldBeOn = newBrightness > 0;
 
   if (shouldBeOn !== actuatorState.light_on) {
     actuatorState.light_on   = shouldBeOn;
     actuatorState.brightness = newBrightness;
     if (shouldBeOn) {
-      logEvent(`Light auto-turned ON — lux dropped to ${reading.lux}`);
+      logEvent(`Light auto-turned ON — lux ${reading.lux} is below the ${luxMin}-${luxMax} optimal window`);
     } else {
-      logEvent(`Light auto-turned OFF — lux ${reading.lux} is back in range`);
+      logEvent(`Light auto-turned OFF — lux ${reading.lux} is within the ${luxMin}-${luxMax} optimal window`);
     }
   } else {
     actuatorState.brightness = newBrightness;
@@ -170,8 +181,13 @@ app.put('/api/profile', (req, res) => {
   if (ideal_lux)      plantProfile.ideal_lux      = ideal_lux;
   if (ideal_soil)     plantProfile.ideal_soil     = ideal_soil;
 
+  if (actuatorState.mode === 'auto') {
+    applyAutoLight(getLatestReading());
+  }
+
   logEvent(`Plant profile updated to "${plantProfile.plant_name}"`);
   broadcast({ type: 'profile', payload: plantProfile });
+  broadcast({ type: 'actuator', payload: actuatorState });
   res.json(plantProfile);
 });
 

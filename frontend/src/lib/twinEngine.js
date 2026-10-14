@@ -203,9 +203,16 @@ export function generateAdvice(evaluation, plantName) {
  * @param {[number, number]} idealLux  - [min, max]
  * @returns {number}  brightness 0-255
  */
-export function computeAutoLightBrightness(lux, [luxMin]) {
-  if (lux >= luxMin) return 0;
-  const ratio = 1 - lux / luxMin; // 0 at luxMin, 1 at 0 lux
+export function computeAutoLightBrightness(lux, [luxMin, luxMax]) {
+  if (!Number.isFinite(lux) || !Number.isFinite(luxMin) || !Number.isFinite(luxMax)) {
+    return 0;
+  }
+
+  if (lux >= luxMin && lux <= luxMax) return 0;
+  if (lux > luxMax) return 0;
+
+  const deficit = luxMin - lux;
+  const ratio = deficit / Math.max(luxMin, 1);
   return Math.round(Math.min(Math.max(ratio * 255, 0), 255));
 }
 
