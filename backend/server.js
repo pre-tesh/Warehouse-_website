@@ -38,18 +38,20 @@ const MAX_HISTORY = 200;
 // ── In-memory state ───────────────────────────────────────────────────────────
 
 let plantProfile = {
-  plant_name:     'Basil',
+  plant_name:     'Zigzag Plant (Nagdaman)',
   ideal_temp:     [18, 27],
   ideal_humidity: [40, 70],
   ideal_light:    [30, 80],
   ideal_soil:     [40, 75],
 };
 
-/** leds: boolean[3] — what the website shows (and what the ESP32 should be) */
-let actuatorState = { leds: [false, false, false] };
+/** leds: boolean[3] — what the website shows (and what the ESP32 should be)
+ *  water: boolean — valve open/closed state
+ */
+let actuatorState = { leds: [false, false, false], water: false };
 
 /** Outstanding website command not yet confirmed by the ESP32 */
-let pendingCommand = null; // { leds: boolean[], at: number }
+let pendingCommand = null; // { leds: boolean[], water: boolean, at: number }
 
 const history = [];
 let latestReading = null;
@@ -76,6 +78,7 @@ function broadcast(data) {
 
 const ledsEqual = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
 const toBoolLeds = (arr) => Array.from({ length: NUM_LEDS }, (_, i) => Boolean(arr?.[i]));
+const toBoolWater = (v) => v === true || v === 1 || v === '1';
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 
 function setDevice(patch) {
@@ -110,33 +113,50 @@ function ingestReading({ temp, humidity, soil, light }) {
 }
 
 /**
- * Reconciles the LED state reported by the ESP32 with what the website wants.
+ * Reconciles the full actuator state reported by the ESP32 with what the website wants.
  * Returns the command to send back to the ESP32 (or null).
  */
-function reconcileLeds(reported) {
+function reconcileActuator(reportedLeds, reportedWater) {
   const now = Date.now();
+  const reportedWaterBool = Boolean(reportedWater);
 
   if (pendingCommand) {
-    if (ledsEqual(reported, pendingCommand.leds)) {
-      pendingCommand = null;                       // ESP32 applied it
-    } else if (now - pendingCommand.at > COMMAND_TIMEOUT_MS) {
-      pendingCommand = null;                       // give up; trust the device
-      actuatorState = { leds: reported };
-      broadcast({ type: 'actuator', payload: actuatorState });
-    } else {
-      return pendingCommand.leds;                  // keep asking
+    const ledMatch = ledsEqual(reportedLeds, pendingCommand.leds);
+    const waterMatch = reportedWaterBool === Boolean(pendingCommand.water);
+
+    if (ledMatch && waterMatch) {
+      pendingCommand = null; // ESP32 applied the command
+      return null;
     }
-    return null;
+
+    if (now - pendingCommand.at > COMMAND_TIMEOUT_MS) {
+      pendingCommand = null; // give up; trust the device
+      actuatorState = { leds: reportedLeds, water: reportedWaterBool };
+      broadcast({ type: 'actuator', payload: actuatorState });
+      return null;
+    }
+
+    const reply = {};
+    if (!ledMatch) reply.set = pendingCommand.leds.map(v => (v ? 1 : 0));
+    if (!waterMatch) reply.water = pendingCommand.water ? 1 : 0;
+    return reply;
   }
 
-  if (!ledsEqual(reported, actuatorState.leds)) {
-    // Changed on the device itself (physical buttons)
-    reported.forEach((on, i) => {
-      if (on !== actuatorState.leds[i]) {
-        logEvent(`Light ${i + 1} turned ${on ? 'ON' : 'OFF'} (physical button)`);
-      }
-    });
-    actuatorState = { leds: reported };
+  const ledChanged = !ledsEqual(reportedLeds, actuatorState.leds);
+  const waterChanged = reportedWaterBool !== actuatorState.water;
+
+  if (ledChanged || waterChanged) {
+    if (ledChanged) {
+      reportedLeds.forEach((on, i) => {
+        if (on !== actuatorState.leds[i]) {
+          logEvent(`Light ${i + 1} turned ${on ? 'ON' : 'OFF'} (physical button)`);
+        }
+      });
+    }
+    if (waterChanged) {
+      logEvent(`Water valve ${reportedWaterBool ? 'OPEN' : 'CLOSED'} (physical button)`);
+    }
+    actuatorState = { leds: reportedLeds, water: reportedWaterBool };
     broadcast({ type: 'actuator', payload: actuatorState });
   }
   return null;
@@ -159,7 +179,7 @@ if (USE_MOCK) {
   setInterval(() => {
     markDeviceSeen('mock');
     ingestReading(generateReading());
-    reconcileLeds(actuatorState.leds); // mock device "applies" commands instantly
+    reconcileActuator(actuatorState.leds, actuatorState.water); // mock device "applies" commands instantly
   }, 1000);
 }
 
@@ -171,15 +191,21 @@ if (USE_MOCK) {
  * Response: { set?: [0|1,0|1,0|1] }  (set is present only when the website sent a command)
  */
 app.post('/api/esp/data', (req, res) => {
-  const { temp, humidity, soil, light, leds } = req.body ?? {};
+  const { temp, humidity, soil, light, leds, water } = req.body ?? {};
   markDeviceSeen(req.ip?.replace('::ffff:', ''));
   ingestReading({ temp, humidity, soil, light });
 
-  let set = null;
-  if (Array.isArray(leds)) {
-    set = reconcileLeds(toBoolLeds(leds));
+  let reply = null;
+  if (Array.isArray(leds) || typeof water !== 'undefined') {
+    const reportedLeds = Array.isArray(leds) ? toBoolLeds(leds) : actuatorState.leds;
+    const reportedWater = typeof water !== 'undefined' ? toBoolWater(water) : actuatorState.water;
+    reply = reconcileActuator(reportedLeds, reportedWater);
   }
-  res.json(set ? { set: set.map(b => (b ? 1 : 0)) } : { ok: 1 });
+
+  if (reply && Object.keys(reply).length > 0) {
+    return res.json(reply);
+  }
+  res.json({ ok: 1 });
 });
 
 app.get('/api/sensor/latest', (req, res) => res.json(latestReading));
@@ -199,23 +225,32 @@ app.get('/api/actuator', (req, res) => res.json(actuatorState));
  *   or: { leds: [bool,bool,bool] }    set all three
  */
 app.post('/api/actuator', (req, res) => {
-  const { index, on, leds } = req.body ?? {};
+  const { index, on, leds, water } = req.body ?? {};
   const target = [...actuatorState.leds];
+  let targetWater = actuatorState.water;
 
   if (Array.isArray(leds)) {
     toBoolLeds(leds).forEach((v, i) => { target[i] = v; });
   } else if (Number.isInteger(index) && index >= 0 && index < NUM_LEDS && typeof on === 'boolean') {
     target[index] = on;
-  } else {
-    return res.status(400).json({ error: 'Expected { index: 0-2, on: boolean } or { leds: boolean[3] }' });
+  } else if (typeof leds !== 'undefined' || typeof water !== 'undefined') {
+    // no LED update requested; keep existing LED state
   }
 
-  if (!ledsEqual(target, actuatorState.leds)) {
+  if (typeof water !== 'undefined') {
+    targetWater = toBoolWater(water);
+  }
+
+  const changed = !ledsEqual(target, actuatorState.leds) || targetWater !== actuatorState.water;
+  if (changed) {
     target.forEach((v, i) => {
       if (v !== actuatorState.leds[i]) logEvent(`Light ${i + 1} turned ${v ? 'ON' : 'OFF'} (website)`);
     });
-    actuatorState = { leds: target };
-    pendingCommand = { leds: target, at: Date.now() };
+    if (targetWater !== actuatorState.water) {
+      logEvent(`Water valve ${targetWater ? 'OPEN' : 'CLOSED'} (website)`);
+    }
+    actuatorState = { leds: target, water: targetWater };
+    pendingCommand = { leds: target, water: targetWater, at: Date.now() };
     broadcast({ type: 'actuator', payload: actuatorState });
   }
   res.json(actuatorState);
@@ -254,9 +289,13 @@ wss.on('connection', (ws) => {
 });
 
 // ── Start server ──────────────────────────────────────────────────────────────
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n🌿 Greenhouse Digital Twin Backend`);
-  console.log(`   REST API : http://localhost:${PORT}/api`);
-  console.log(`   WebSocket: ws://localhost:${PORT}/ws`);
-  console.log(`   ESP32 should POST to: http://<this-computer-LAN-IP>:${PORT}/api/esp/data\n`);
-});
+if (require.main === module) {
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n🌿 Greenhouse Digital Twin Backend`);
+    console.log(`   REST API : http://localhost:${PORT}/api`);
+    console.log(`   WebSocket: ws://localhost:${PORT}/ws`);
+    console.log(`   ESP32 should POST to: http://<this-computer-LAN-IP>:${PORT}/api/esp/data\n`);
+  });
+}
+
+module.exports = { app, server, wss };

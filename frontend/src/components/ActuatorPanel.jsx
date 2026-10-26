@@ -8,9 +8,10 @@ import { useSensor } from '../context/SensorContext';
 import './ActuatorPanel.css';
 
 export default function ActuatorPanel() {
-  const { actuator, toggleLed, setAll } = useActuator();
+  const { actuator, toggleLed, setAll, toggleWater } = useActuator();
   const { device } = useSensor();
   const leds = actuator.leds ?? [false, false, false];
+  const waterOpen = Boolean(actuator.water);
   const onCount = leds.filter(Boolean).length;
 
   return (
@@ -46,6 +47,17 @@ export default function ActuatorPanel() {
           All off
         </button>
       </div>
+
+      <button
+        type="button"
+        className={`water-btn ${waterOpen ? 'open' : 'closed'}`}
+        onClick={toggleWater}
+        aria-pressed={waterOpen}
+      >
+        <span className="water-btn__icon">{waterOpen ? '🚿' : '🔒'}</span>
+        <span className="water-btn__label">Water Valve</span>
+        <span className="water-btn__state">{waterOpen ? 'OPEN' : 'CLOSED'}</span>
+      </button>
 
       {!device.online && (
         <div className="actuator-panel__warning">

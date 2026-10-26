@@ -9,7 +9,7 @@ import { getDataService } from '../data/mockDataService';
 const SensorContext = createContext(null);
 
 const DEFAULT_PROFILE = {
-  plant_name:     'Basil',
+  plant_name:     'Zigzag Plant (Nagdaman)',
   ideal_temp:     [18, 27],
   ideal_humidity: [40, 70],
   ideal_light:    [30, 80],

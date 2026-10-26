@@ -42,7 +42,7 @@ export default function Dashboard() {
         <div className="dashboard__title-group">
           <div className="dashboard__logo">🌿</div>
           <div>
-            <h1 className="dashboard__title">Greenhouse Digital Twin</h1>
+            <h1 className="dashboard__title">Greenhouse Monitoring System Digital Twin</h1>
             <p className="dashboard__subtitle">ESP32 · {profile.plant_name} · Real-time monitoring</p>
           </div>
         </div>
@@ -69,7 +69,7 @@ export default function Dashboard() {
           </div>
 
           <div className="dashboard__scene-label">
-            3D Digital Twin — Orbit to explore
+            3D Plant Twin — Orbit to explore
           </div>
         </section>
 
