@@ -4,7 +4,14 @@ const assert = require('node:assert/strict');
 process.env.PORT = '0';
 const { server } = require('../server.js');
 
+async function startServer() {
+  if (server.listening) return server;
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  return server;
+}
+
 test('ESP readings accept water state and website commands can set water', async (t) => {
+  await startServer();
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
 
   const espRes = await fetch(`${baseUrl}/api/esp/data`, {

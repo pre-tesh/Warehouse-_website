@@ -110,6 +110,17 @@ export function createDataService() {
       return res.json();
     },
 
+    /** Open or close the water valve. @param {boolean} water */
+    async setWater(water) {
+      const res = await fetch(`${BACKEND_URL}/api/actuator`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ water }),
+      });
+      if (!res.ok) throw new Error(`Water command failed (${res.status})`);
+      return res.json();
+    },
+
     /**
      * Update the plant profile via REST.
      * @param {PlantProfile} profile
