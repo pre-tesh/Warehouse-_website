@@ -16,12 +16,13 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <DHT.h>
+#include <ESP32Servo.h>
 
 // ───────────── CONFIGURE THESE ─────────────
 const char* WIFI_SSID   = "warehouse";
 const char* WIFI_PASS   = "warehouse123";
 // LAN IP of the laptop running the backend (Linux: `hostname -I`)
-const char* SERVER_HOST = "10.30.106.152";
+const char* SERVER_HOST = "10.154.144.152";
 const int   SERVER_PORT = 4000;
 
 // Soil calibration: read "raw" on the Serial Monitor with the sensor in dry
@@ -38,6 +39,18 @@ const int SOIL_RAW_WET = 1300;
 #define BUTTON_UP   25
 #define BUTTON_DOWN 26
 const int LED_PINS[3] = {14, 12, 13};   // LED1, LED2, LED3
+const int SERVO_PIN = 27;               // Water valve servo signal pin
+
+// Continuous-rotation valve drive calibration.
+// 1500 us is stop for most continuous servos.
+const int VALVE_STOP_US  = 1500;
+const int VALVE_OPEN_US  = 1700;
+const int VALVE_CLOSE_US = 1300;
+const unsigned long VALVE_STEP_MS = 800;
+const unsigned long VALVE_SETTLE_MS = 80;
+const int SERVO_MIN_US = 500;
+const int SERVO_MAX_US = 2400;
+const bool SERVO_STARTUP_TEST = true;
 
 // Timing (ms)
 const unsigned long SEND_INTERVAL   = 1000;
@@ -47,8 +60,10 @@ const unsigned long DEBOUNCE        = 50;
 const unsigned long WIFI_RETRY      = 5000;
 
 DHT dht(DHTPIN, DHTTYPE);
+Servo valveServo;
 
 bool  ledState[3] = {false, false, false};
+bool  waterOpen = false;
 float temperature = NAN;
 float humidity    = NAN;
 float soilPercent = 0;
@@ -74,6 +89,18 @@ int ledCount() {
 
 void applyLeds() {
   for (int i = 0; i < 3; i++) digitalWrite(LED_PINS[i], ledState[i] ? HIGH : LOW);
+}
+
+void driveValveFor(unsigned int pulseUs, unsigned long driveMs) {
+  valveServo.writeMicroseconds(pulseUs);
+  delay(driveMs);
+  valveServo.writeMicroseconds(VALVE_STOP_US);
+  delay(VALVE_SETTLE_MS);
+}
+
+void applyValveFromState() {
+  // One website toggle = one 90-degree timed step (calibrate VALVE_STEP_MS as needed).
+  driveValveFor(waterOpen ? VALVE_OPEN_US : VALVE_CLOSE_US, VALVE_STEP_MS);
 }
 
 // True once per debounced press
@@ -135,19 +162,36 @@ void readSensors() {
   }
 }
 
-// Server reply may contain {"set":[1,0,1]} -> apply it
+// Server reply may contain {"set":[1,0,1],"water":1} -> apply it
 void handleServerReply(const String &body) {
   int idx = body.indexOf("\"set\":[");
-  if (idx < 0) return;
-  idx += 7;
-  for (int i = 0; i < 3; i++) {
-    while (idx < (int)body.length() && (body[idx] == ' ' || body[idx] == ',')) idx++;
-    if (idx >= (int)body.length()) return;
-    ledState[i] = (body[idx] == '1');
-    idx++;
+  if (idx >= 0) {
+    idx += 7;
+    for (int i = 0; i < 3; i++) {
+      while (idx < (int)body.length() && (body[idx] == ' ' || body[idx] == ',')) idx++;
+      if (idx >= (int)body.length()) break;
+      ledState[i] = (body[idx] == '1');
+      idx++;
+    }
+    applyLeds();
+    Serial.println("Website LED command applied");
   }
-  applyLeds();
-  Serial.println("Website command applied");
+
+  int wIdx = body.indexOf("\"water\":");
+  if (wIdx >= 0) {
+    wIdx += 8;
+    while (wIdx < (int)body.length() && body[wIdx] == ' ') wIdx++;
+    if (wIdx < (int)body.length()) {
+      bool requestedOpen = (body[wIdx] == '1' || body[wIdx] == 't' || body[wIdx] == 'T');
+      if (requestedOpen != waterOpen) {
+        waterOpen = requestedOpen;
+        applyValveFromState();
+        Serial.printf("Website water command applied -> %s (timed %lu ms)\n",
+                      waterOpen ? "OPEN" : "CLOSED",
+                      VALVE_STEP_MS);
+      }
+    }
+  }
 }
 
 void sendToServer() {
@@ -159,9 +203,10 @@ void sendToServer() {
 
   char json[200];
   snprintf(json, sizeof(json),
-           "{\"temp\":%s,\"humidity\":%s,\"soil\":%.1f,\"light\":%.1f,\"leds\":[%d,%d,%d]}",
+           "{\"temp\":%s,\"humidity\":%s,\"soil\":%.1f,\"light\":%.1f,\"leds\":[%d,%d,%d],\"water\":%d}",
            tStr, hStr, soilPercent, lightPercent,
-           ledState[0], ledState[1], ledState[2]);
+           ledState[0], ledState[1], ledState[2],
+           waterOpen ? 1 : 0);
 
   HTTPClient http;
   String url = String("http://") + SERVER_HOST + ":" + SERVER_PORT + "/api/esp/data";
@@ -194,6 +239,15 @@ void setup() {
   Serial.println("\n=== Greenhouse Digital Twin ESP32 ===");
 
   dht.begin();
+
+  valveServo.setPeriodHertz(50);  // standard analog servo frequency
+  valveServo.attach(SERVO_PIN, SERVO_MIN_US, SERVO_MAX_US);
+  valveServo.writeMicroseconds(VALVE_STOP_US);
+  delay(200);
+  if (SERVO_STARTUP_TEST) {
+    driveValveFor(VALVE_OPEN_US, 300);
+    driveValveFor(VALVE_CLOSE_US, 300);
+  }
 
   for (int i = 0; i < 3; i++) pinMode(LED_PINS[i], OUTPUT);
   applyLeds();  // all off

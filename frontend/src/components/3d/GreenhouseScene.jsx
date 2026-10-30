@@ -11,6 +11,7 @@ import { useActuator } from '../../context/ActuatorContext';
 import { GreenhouseStructure } from './GreenhouseStructure';
 import { PlantModel } from './PlantModel';
 import { GrowLight } from './GrowLight';
+import { WaterPump } from './WaterPump';
 import { evaluateReading } from '../../lib/twinEngine';
 
 export default function GreenhouseScene() {
@@ -65,6 +66,9 @@ export default function GreenhouseScene() {
 
           {/* ── Greenhouse structure (glass walls, roof, door) ──────────────── */}
           <GreenhouseStructure humidityNorm={humidityNorm} />
+
+          {/* ── Water pump and flow (driven by water actuator state) ─────────── */}
+          <WaterPump active={Boolean(actuator.water)} />
 
           {/* ── Plant model (driven by health evaluation) ──────────────────── */}
           <PlantModel evaluation={evaluation} latest={latest} profile={profile} />
