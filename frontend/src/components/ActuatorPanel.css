@@ -120,6 +120,16 @@
   color: var(--text-muted);
 }
 
+.water-state-note {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: rgba(148, 163, 184, 0.1);
+  border: 1px dashed rgba(148, 163, 184, 0.45);
+  border-radius: 10px;
+  padding: 8px 10px;
+  line-height: 1.35;
+}
+
 .actuator-panel__warning {
   font-size: 0.72rem;
   color: var(--warning-strong);

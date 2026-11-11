@@ -54,10 +54,14 @@ export default function ActuatorPanel() {
         onClick={toggleWater}
         aria-pressed={waterOpen}
       >
-        <span className="water-btn__icon">{waterOpen ? '🚿' : '🔒'}</span>
-        <span className="water-btn__label">Water Valve</span>
-        <span className="water-btn__state">{waterOpen ? 'OPEN' : 'CLOSED'}</span>
+        <span className="water-btn__icon">{waterOpen ? '💧' : '🛑'}</span>
+        <span className="water-btn__label">Water Pump</span>
+        <span className="water-btn__state">{waterOpen ? 'ON' : 'OFF'}</span>
       </button>
+
+      <div className="water-state-note">
+        Pump state updates live from ESP32 (website + physical switch).
+      </div>
 
       {!device.online && (
         <div className="actuator-panel__warning">

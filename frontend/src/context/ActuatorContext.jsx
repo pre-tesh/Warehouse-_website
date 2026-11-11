@@ -1,6 +1,6 @@
 /**
  * ActuatorContext.jsx
- * Provides the state of the 3 LEDs and the water valve and functions to switch them.
+ * Provides the state of the 3 LEDs and the water pump and functions to switch them.
  */
 import { createContext, useContext, useEffect, useReducer, useRef } from 'react';
 import { getDataService } from '../data/mockDataService';

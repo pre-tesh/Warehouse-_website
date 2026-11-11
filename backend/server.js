@@ -46,7 +46,7 @@ let plantProfile = {
 };
 
 /** leds: boolean[3] — what the website shows (and what the ESP32 should be)
- *  water: boolean — valve open/closed state
+ *  water: boolean — pump on/off state
  */
 let actuatorState = { leds: [false, false, false], water: false };
 
@@ -154,7 +154,7 @@ function reconcileActuator(reportedLeds, reportedWater) {
       });
     }
     if (waterChanged) {
-      logEvent(`Water valve ${reportedWaterBool ? 'OPEN' : 'CLOSED'} (physical button)`);
+      logEvent(`Water pump ${reportedWaterBool ? 'ON' : 'OFF'} (physical switch)`);
     }
     actuatorState = { leds: reportedLeds, water: reportedWaterBool };
     broadcast({ type: 'actuator', payload: actuatorState });
@@ -247,7 +247,7 @@ app.post('/api/actuator', (req, res) => {
       if (v !== actuatorState.leds[i]) logEvent(`Light ${i + 1} turned ${v ? 'ON' : 'OFF'} (website)`);
     });
     if (targetWater !== actuatorState.water) {
-      logEvent(`Water valve ${targetWater ? 'OPEN' : 'CLOSED'} (website)`);
+      logEvent(`Water pump ${targetWater ? 'ON' : 'OFF'} (website)`);
     }
     actuatorState = { leds: target, water: targetWater };
     pendingCommand = { leds: target, water: targetWater, at: Date.now() };

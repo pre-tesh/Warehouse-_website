@@ -110,7 +110,7 @@ export function createDataService() {
       return res.json();
     },
 
-    /** Open or close the water valve. @param {boolean} water */
+    /** Turn the water pump on/off. @param {boolean} water */
     async setWater(water) {
       const res = await fetch(`${BACKEND_URL}/api/actuator`, {
         method:  'POST',

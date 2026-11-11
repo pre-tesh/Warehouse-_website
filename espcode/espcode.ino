@@ -2,7 +2,9 @@
  * Mini Greenhouse Digital Twin — ESP32 firmware
  *
  *  - Reads DHT11 (temp/humidity), capacitive soil sensor, LDR (light %)
- *  - Controls 3 LEDs from the 2 physical buttons AND from the website
+ *  - Controls 3 LEDs from 1 physical button (cycle) AND from the website
+ *    Button UP (GPIO 25) cycles: 0→1→2→3→2→1→0 LEDs on
+ *  - GPIO 26 is free for DC motor control (user-defined)
  *  - Every SEND_INTERVAL_MS it POSTs readings + LED state to the laptop:
  *        POST http://<SERVER_HOST>:<SERVER_PORT>/api/esp/data
  *        {"temp":24.1,"humidity":60.0,"soil":55.0,"light":42.0,"leds":[1,0,0]}
@@ -16,13 +18,12 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <DHT.h>
-#include <ESP32Servo.h>
 
 // ───────────── CONFIGURE THESE ─────────────
 const char* WIFI_SSID   = "warehouse";
 const char* WIFI_PASS   = "warehouse123";
 // LAN IP of the laptop running the backend (Linux: `hostname -I`)
-const char* SERVER_HOST = "10.154.144.152";
+const char* SERVER_HOST = "10.246.40.152";
 const int   SERVER_PORT = 4000;
 
 // Soil calibration: read "raw" on the Serial Monitor with the sensor in dry
@@ -37,20 +38,12 @@ const int SOIL_RAW_WET = 1300;
 #define SOIL_PIN    34
 #define LDR_PIN     35
 #define BUTTON_UP   25
-#define BUTTON_DOWN 26
+// GPIO 26 is now free — reserved for DC motor control
+const int PUMP_SWITCH_PIN = 33;         // Physical push button for pump toggle
 const int LED_PINS[3] = {14, 12, 13};   // LED1, LED2, LED3
-const int SERVO_PIN = 27;               // Water valve servo signal pin
-
-// Continuous-rotation valve drive calibration.
-// 1500 us is stop for most continuous servos.
-const int VALVE_STOP_US  = 1500;
-const int VALVE_OPEN_US  = 1700;
-const int VALVE_CLOSE_US = 1300;
-const unsigned long VALVE_STEP_MS = 800;
-const unsigned long VALVE_SETTLE_MS = 80;
-const int SERVO_MIN_US = 500;
-const int SERVO_MAX_US = 2400;
-const bool SERVO_STARTUP_TEST = true;
+const int PUMP_RELAY_PIN = 27;          // Relay IN pin
+// This relay module turns ON when IN is pulled LOW (active-LOW).
+const bool RELAY_ACTIVE_LOW = true;
 
 // Timing (ms)
 const unsigned long SEND_INTERVAL   = 1000;
@@ -60,10 +53,10 @@ const unsigned long DEBOUNCE        = 50;
 const unsigned long WIFI_RETRY      = 5000;
 
 DHT dht(DHTPIN, DHTTYPE);
-Servo valveServo;
 
 bool  ledState[3] = {false, false, false};
-bool  waterOpen = false;
+bool  lightGoingUp = true;   // cycling direction: true = turning on, false = turning off
+bool  waterOpen = false;     // pump is OFF by default
 float temperature = NAN;
 float humidity    = NAN;
 float soilPercent = 0;
@@ -79,7 +72,7 @@ struct Button {
   unsigned long changedAt;
 };
 Button btnUp   = {BUTTON_UP,   HIGH, HIGH, 0};
-Button btnDown = {BUTTON_DOWN, HIGH, HIGH, 0};
+Button pumpSwitchBtn = {PUMP_SWITCH_PIN, HIGH, HIGH, 0};
 
 int ledCount() {
   int n = 0;
@@ -91,16 +84,16 @@ void applyLeds() {
   for (int i = 0; i < 3; i++) digitalWrite(LED_PINS[i], ledState[i] ? HIGH : LOW);
 }
 
-void driveValveFor(unsigned int pulseUs, unsigned long driveMs) {
-  valveServo.writeMicroseconds(pulseUs);
-  delay(driveMs);
-  valveServo.writeMicroseconds(VALVE_STOP_US);
-  delay(VALVE_SETTLE_MS);
-}
-
-void applyValveFromState() {
-  // One website toggle = one 90-degree timed step (calibrate VALVE_STEP_MS as needed).
-  driveValveFor(waterOpen ? VALVE_OPEN_US : VALVE_CLOSE_US, VALVE_STEP_MS);
+// Active-LOW relay with no optocoupler: drive the pin LOW to turn ON, and
+// release it (INPUT / high-impedance) to turn OFF so the module's own
+// pull-up holds the relay fully off, regardless of the ESP32's 3.3V level.
+void applyPumpState() {
+  if (waterOpen) {
+    pinMode(PUMP_RELAY_PIN, OUTPUT);
+    digitalWrite(PUMP_RELAY_PIN, LOW);   // ON
+  } else {
+    pinMode(PUMP_RELAY_PIN, INPUT);      // OFF
+  }
 }
 
 // True once per debounced press
@@ -122,19 +115,42 @@ float toPercent(int raw, int rawAt0, int rawAt100) {
   return constrain(p, 0.0f, 100.0f);
 }
 
-// UP lights the first unlit LED, DOWN switches off the last lit LED
+// Single button cycles: 0→1→2→3 LEDs on, then 3→2→1→0 LEDs off, repeat.
+// Direction auto-corrects if the website changes LED state independently.
 void handleButtons() {
   if (buttonPressed(btnUp)) {
-    for (int i = 0; i < 3; i++) if (!ledState[i]) { ledState[i] = true; break; }
+    int n = ledCount();
+    // Auto-correct direction at boundaries
+    if (n == 0) lightGoingUp = true;
+    else if (n == 3) lightGoingUp = false;
+
+    if (lightGoingUp) {
+      for (int i = 0; i < 3; i++) {
+        if (!ledState[i]) { ledState[i] = true; break; }
+      }
+    } else {
+      for (int i = 2; i >= 0; i--) {
+        if (ledState[i]) { ledState[i] = false; break; }
+      }
+    }
+
+    // Update direction for next press
+    n = ledCount();
+    if (n == 3) lightGoingUp = false;
+    if (n == 0) lightGoingUp = true;
+
     applyLeds();
-    Serial.printf("UP! LEDs on: %d\n", ledCount());
+    Serial.printf("LIGHT CYCLE! LEDs on: %d (next: %s)\n", n, lightGoingUp ? "UP" : "DOWN");
     lastSend = 0;  // tell the website immediately
   }
-  if (buttonPressed(btnDown)) {
-    for (int i = 2; i >= 0; i--) if (ledState[i]) { ledState[i] = false; break; }
-    applyLeds();
-    Serial.printf("DOWN! LEDs on: %d\n", ledCount());
-    lastSend = 0;
+}
+
+void handlePumpSwitch() {
+  if (buttonPressed(pumpSwitchBtn)) {
+    waterOpen = !waterOpen;
+    applyPumpState();
+    Serial.printf("Pump switch pressed -> pump %s\n", waterOpen ? "ON" : "OFF");
+    lastSend = 0;  // report state change to backend immediately
   }
 }
 
@@ -185,10 +201,9 @@ void handleServerReply(const String &body) {
       bool requestedOpen = (body[wIdx] == '1' || body[wIdx] == 't' || body[wIdx] == 'T');
       if (requestedOpen != waterOpen) {
         waterOpen = requestedOpen;
-        applyValveFromState();
-        Serial.printf("Website water command applied -> %s (timed %lu ms)\n",
-                      waterOpen ? "OPEN" : "CLOSED",
-                      VALVE_STEP_MS);
+        applyPumpState();
+        Serial.printf("Website water command applied -> pump %s\n",
+                      waterOpen ? "ON" : "OFF");
       }
     }
   }
@@ -234,25 +249,22 @@ void keepWifiAlive() {
 }
 
 void setup() {
+  // *** FIRST THING: force the pump OFF before anything else ***
+  // Release the relay pin so the module's pull-up keeps the relay off.
+  pinMode(PUMP_RELAY_PIN, INPUT);
+
   Serial.begin(115200);
   delay(500);
   Serial.println("\n=== Greenhouse Digital Twin ESP32 ===");
 
   dht.begin();
-
-  valveServo.setPeriodHertz(50);  // standard analog servo frequency
-  valveServo.attach(SERVO_PIN, SERVO_MIN_US, SERVO_MAX_US);
-  valveServo.writeMicroseconds(VALVE_STOP_US);
-  delay(200);
-  if (SERVO_STARTUP_TEST) {
-    driveValveFor(VALVE_OPEN_US, 300);
-    driveValveFor(VALVE_CLOSE_US, 300);
-  }
+  applyPumpState();  // Reinforces pump OFF (waterOpen starts false).
 
   for (int i = 0; i < 3; i++) pinMode(LED_PINS[i], OUTPUT);
   applyLeds();  // all off
   pinMode(BUTTON_UP, INPUT_PULLUP);
-  pinMode(BUTTON_DOWN, INPUT_PULLUP);
+  // GPIO 26 (old BUTTON_DOWN) is now free for DC motor — configure it there
+  pinMode(PUMP_SWITCH_PIN, INPUT_PULLUP);
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
@@ -271,6 +283,7 @@ void setup() {
 
 void loop() {
   handleButtons();     // always responsive, even without WiFi
+  handlePumpSwitch();
   readSensors();
   keepWifiAlive();
 
